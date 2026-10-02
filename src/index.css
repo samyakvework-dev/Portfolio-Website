@@ -1,0 +1,154 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   LOCAL FONT FACES — PROPRIETARY TYPOGRAPHY
+   ========================================================================== */
+
+@font-face {
+  font-family: 'Creato Display';
+  src: url('/fonts/CreatoDisplay-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Creato Display';
+  src: url('/fonts/CreatoDisplay-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Creato Display';
+  src: url('/fonts/CreatoDisplay-Medium.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Creato Display';
+  src: url('/fonts/CreatoDisplay-Medium.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Apple Garamond';
+  src: url('/fonts/AppleGaramond-Italic.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Citadel';
+  src: url('/fonts/CitadelScriptStd.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ==========================================================================
+   WARM IVORY & GRAPHITE DESIGN TOKENS
+   ========================================================================== */
+
+@layer base {
+  :root {
+    --bg-warm-ivory: #F5F4F0;
+    --bg-surface: #ECEBE7;
+    --bg-white: #FFFFFF;
+    --bg-cinematic: #111111;
+    --text-primary: #171717;
+    --text-secondary: #686764;
+    --text-muted: #8E8D88;
+    --accent-taupe: #9A9185;
+    --border-subtle: rgba(0, 0, 0, 0.08);
+    --border-card: rgba(0, 0, 0, 0.05);
+  }
+
+  body {
+    background-color: var(--bg-warm-ivory);
+    color: var(--text-primary);
+    font-family: 'Creato Display', -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+    letter-spacing: -0.015em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+}
+
+/* Typography Utility Classes */
+.font-creato {
+  font-family: 'Creato Display', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.font-editorial {
+  font-family: 'Apple Garamond', Georgia, serif;
+  font-style: italic;
+}
+
+.font-signature {
+  font-family: 'Citadel', cursive, sans-serif;
+}
+
+/* Heading Scales with Creato Display */
+.hero-headline {
+  font-family: 'Creato Display', sans-serif;
+  font-size: clamp(3rem, 7vw, 6.2rem);
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+}
+
+.section-headline {
+  font-family: 'Creato Display', sans-serif;
+  font-size: clamp(2.2rem, 4.8vw, 4.2rem);
+  font-weight: 600;
+  line-height: 1.06;
+  letter-spacing: -0.035em;
+}
+
+.project-title {
+  font-family: 'Creato Display', sans-serif;
+  font-size: clamp(1.4rem, 2.2vw, 2.2rem);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+.meta-label {
+  font-family: 'Creato Display', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Cursor reveal mask styling */
+.cursor-reveal-mask {
+  mask-repeat: no-repeat;
+  -webkit-mask-repeat: no-repeat;
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+/* Clean minimal scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F5F4F0;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.16);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.28);
+}
