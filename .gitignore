@@ -17,7 +17,7 @@ dist-ssr
 *.local
 
 # Data / Temp
-data/
+/data/
 *.sqlite
 *.db
 
