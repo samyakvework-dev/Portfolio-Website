@@ -58,10 +58,25 @@ export const ContactSection: React.FC = () => {
           message: trimmedMessage 
         }),
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Unable to send your enquiry right now. Please try again later.');
+
+      let data: any = null;
+      const contentType = res.headers.get('content-type') || '';
+
+      if (contentType.includes('application/json')) {
+        try {
+          data = await res.json();
+        } catch {
+          data = null;
+        }
       }
+
+      if (!res.ok || !data || !data.success) {
+        const fallbackError = data?.error || (res.status >= 500
+          ? 'Unable to send your enquiry right now. Please try again later.'
+          : 'Failed to send inquiry. Please check the fields and try again.');
+        throw new Error(fallbackError);
+      }
+
       setIsSent(true);
       if (data.referenceId || data.submission?.id) {
         setReferenceId(String(data.referenceId || data.submission.id));

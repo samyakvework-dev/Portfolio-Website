@@ -71,10 +71,22 @@ export const ContactForm: React.FC = () => {
         })
       });
 
-      const data = await response.json();
+      let data: any = null;
+      const contentType = response.headers.get('content-type') || '';
 
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Unable to send your enquiry right now. Please try again later.');
+      if (contentType.includes('application/json')) {
+        try {
+          data = await response.json();
+        } catch {
+          data = null;
+        }
+      }
+
+      if (!response.ok || !data || !data.success) {
+        const fallbackError = data?.error || (response.status >= 500
+          ? 'Unable to send your enquiry right now. Please try again later.'
+          : 'Something went wrong. Please try again.');
+        throw new Error(fallbackError);
       }
 
       // Success
