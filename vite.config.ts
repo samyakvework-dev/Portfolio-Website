@@ -1,25 +1,21 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import { handleContactRequest } from './server/apiHandler';
 
-function contactDbPlugin() {
+function contactDevPlugin(): Plugin {
   return {
-    name: 'contact-db-api',
-    configureServer(server: any) {
-      server.middlewares.use(async (req: any, res: any, next: any) => {
+    name: 'contact-dev-api',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
         if (req.url?.startsWith('/api/contact')) {
-          const handled = await handleContactRequest(req, res);
-          if (handled) return;
-        }
-        next();
-      });
-    },
-    configurePreviewServer(server: any) {
-      server.middlewares.use(async (req: any, res: any, next: any) => {
-        if (req.url?.startsWith('/api/contact')) {
-          const handled = await handleContactRequest(req, res);
-          if (handled) return;
+          try {
+            const { handleContactRequest } = await server.ssrLoadModule('/api/_lib/apiHandler.ts');
+            const handled = await handleContactRequest(req, res);
+            if (handled) return;
+          } catch (err) {
+            console.error('[Vite dev middleware error]', err);
+          }
         }
         next();
       });
@@ -31,7 +27,7 @@ export default defineConfig({
   plugins: [
     tailwindcss(),
     react(),
-    contactDbPlugin()
+    contactDevPlugin()
   ],
   server: {
     port: 5173,
