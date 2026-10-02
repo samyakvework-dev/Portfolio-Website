@@ -1,4 +1,4 @@
-import { sendContactEmail } from './mailer';
+import { sendContactEmail } from './mailer.js';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

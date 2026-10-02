@@ -1,1 +1,1 @@
-export * from '../api/_lib/apiHandler';
+export * from '../api/_lib/apiHandler.js';
