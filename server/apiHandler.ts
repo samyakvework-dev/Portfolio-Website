@@ -1,4 +1,4 @@
-import { sendContactEmail } from './mailer.ts';
+import { sendContactEmail } from './mailer';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -127,7 +127,7 @@ export async function handleContactRequest(req: any, res: any): Promise<boolean>
       return true;
     }
 
-    sendResponse(res, 200, {
+    sendResponse(res, 201, {
       success: true,
       message: 'Thank you — your enquiry has been sent.',
       referenceId

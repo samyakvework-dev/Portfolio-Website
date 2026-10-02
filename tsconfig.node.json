@@ -3,21 +3,20 @@
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
     "target": "es2023",
     "lib": ["ES2023"],
-    "types": ["node"],
+    "types": ["node", "@vercel/node"],
     "skipLibCheck": true,
 
     /* Bundler mode */
-    "module": "nodenext",
-    "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": false,
     "moduleDetection": "force",
     "noEmit": true,
 
     /* Linting */
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vite.config.ts"]
+  "include": ["vite.config.ts", "server/**/*.ts", "api/**/*.ts"]
 }
