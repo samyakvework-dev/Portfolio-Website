@@ -267,51 +267,125 @@ export const AdminPage: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Supabase Storage free tier max file upload limit is 50 MB
+    if (file.size > 50 * 1024 * 1024) {
+      showToast(
+        `File size (${(file.size / (1024 * 1024)).toFixed(1)} MB) exceeds the 50 MB limit. Please compress the video or enter an external Video URL.`,
+        'error'
+      );
+      e.target.value = '';
+      return;
+    }
+
     setIsUploadingMedia(true);
-    setUploadProgressText(`Uploading ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)...`);
+    setUploadProgressText(`Requesting upload authorization for ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)...`);
 
     try {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const dataUrl = reader.result as string;
+      // 1. Request short-lived signed upload URL from backend (keeps service-role key secure on server)
+      const signRes = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          action: 'get-signed-url',
+          filename: file.name,
+          contentType: file.type || 'application/octet-stream'
+        })
+      });
 
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            filename: file.name,
-            contentType: file.type,
-            dataUrl
-          })
+      const signData = await signRes.json();
+
+      // If signed URL provided, upload directly from browser to Supabase Storage (bypasses Vercel 4.5 MB limit)
+      if (signRes.ok && signData.success && signData.signedUrl) {
+        setUploadProgressText(`Uploading ${file.name}... 0%`);
+
+        await new Promise<void>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('PUT', signData.signedUrl);
+          xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              const percent = Math.round((event.loaded / event.total) * 100);
+              setUploadProgressText(`Uploading ${file.name}... ${percent}%`);
+            }
+          };
+
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve();
+            } else {
+              reject(new Error(`Storage rejected upload (HTTP ${xhr.status}): ${xhr.responseText || xhr.statusText}`));
+            }
+          };
+
+          xhr.onerror = () => reject(new Error('Network connection error occurred during file upload.'));
+          xhr.ontimeout = () => reject(new Error('Upload request timed out. Please check your connection.'));
+          xhr.send(file);
         });
 
-        const data = await res.json();
-        if (res.ok && data.success && data.url) {
-          showToast(`${targetField === 'video' ? 'Video' : 'Thumbnail'} uploaded successfully.`);
-          setEditingProject((prev) => ({
-            ...prev,
-            [targetField]: data.url,
-            ...(targetField === 'poster' ? { thumbnail: data.url } : {})
-          }));
+        // ONLY attach storage URL after upload strictly succeeds:
+        setEditingProject((prev) => ({
+          ...prev,
+          [targetField]: signData.publicUrl,
+          ...(targetField === 'poster' ? { thumbnail: signData.publicUrl } : {})
+        }));
+
+        showToast(`${targetField === 'video' ? 'Video' : 'Thumbnail'} uploaded successfully to Supabase.`);
+      } else {
+        // If Supabase is not configured on this environment, fall back to Base64 only if small (< 4 MB)
+        if (file.size < 4 * 1024 * 1024) {
+          setUploadProgressText(`Processing local upload for ${file.name}...`);
+          const reader = new FileReader();
+          await new Promise<void>((resolve, reject) => {
+            reader.onload = async () => {
+              try {
+                const dataUrl = reader.result as string;
+                const fallbackRes = await fetch('/api/upload', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                  },
+                  body: JSON.stringify({
+                    filename: file.name,
+                    contentType: file.type,
+                    dataUrl
+                  })
+                });
+                const fallbackData = await fallbackRes.json();
+                if (fallbackRes.ok && fallbackData.success && fallbackData.url) {
+                  setEditingProject((prev) => ({
+                    ...prev,
+                    [targetField]: fallbackData.url,
+                    ...(targetField === 'poster' ? { thumbnail: fallbackData.url } : {})
+                  }));
+                  showToast(`${targetField === 'video' ? 'Video' : 'Thumbnail'} uploaded.`);
+                  resolve();
+                } else {
+                  reject(new Error(fallbackData.error || 'Server upload failed.'));
+                }
+              } catch (err) {
+                reject(err);
+              }
+            };
+            reader.onerror = () => reject(new Error('Failed to read file locally.'));
+            reader.readAsDataURL(file);
+          });
         } else {
-          showToast(data.error || 'Upload failed.', 'error');
+          throw new Error(signData.error || 'Direct Supabase upload required for files larger than 4 MB.');
         }
-        setIsUploadingMedia(false);
-        setUploadProgressText('');
-      };
-
-      reader.onerror = () => {
-        showToast('Failed to read file for upload.', 'error');
-        setIsUploadingMedia(false);
-      };
-
-      reader.readAsDataURL(file);
+      }
     } catch (err: any) {
+      console.error('[Upload Failed]', err);
       showToast(err.message || 'Error uploading file.', 'error');
+    } finally {
+      // ALWAYS clear loading indicator state regardless of success or failure
       setIsUploadingMedia(false);
+      setUploadProgressText('');
+      e.target.value = '';
     }
   };
 
@@ -1055,9 +1129,10 @@ export const AdminPage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-[#171717] text-white hover:bg-black text-xs font-semibold uppercase tracking-wider"
+                  disabled={isUploadingMedia}
+                  className="px-6 py-2.5 rounded-xl bg-[#171717] text-white hover:bg-black text-xs font-semibold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
-                  Save Project
+                  {isUploadingMedia ? 'Uploading Media...' : 'Save Project'}
                 </button>
               </div>
             </form>
