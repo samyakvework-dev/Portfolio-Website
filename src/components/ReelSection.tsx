@@ -28,7 +28,7 @@ export const ReelSection: React.FC = () => {
           setIsPlaying(false);
         }
       },
-      { threshold: 0.25 }
+      { threshold: 0.3 }
     );
 
     const el = containerRef.current;
@@ -61,32 +61,32 @@ export const ReelSection: React.FC = () => {
   return (
     <section
       id="reel"
-      className="w-full bg-[#000000] text-[#F5F5F7] py-28 md:py-40 lg:py-48 px-6 sm:px-10 lg:px-16 transition-colors duration-700"
+      className="w-full bg-[#111111] text-[#F5F5F7] py-16 md:py-20 lg:py-24 px-6 sm:px-10 lg:px-16 transition-colors duration-700"
     >
-      <div className="max-w-[1500px] mx-auto">
-        {/* Cinematic Header */}
-        <div className="flex flex-col sm:flex-row sm:items-baseline justify-between mb-12 sm:mb-16 pb-6 border-b border-white/10">
+      <div className="max-w-5xl mx-auto">
+        {/* Cinematic Header — Tightly Spaced */}
+        <div className="flex flex-col sm:flex-row sm:items-baseline justify-between mb-8 sm:mb-10 pb-5 border-b border-white/10">
           <div>
-            <span className="text-xs font-mono uppercase tracking-[0.2em] text-[#86868B] block mb-2">
+            <span className="text-xs font-creato uppercase tracking-[0.2em] text-[#86868B] block mb-1.5">
               02 / SHOWCASE
             </span>
-            <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white uppercase">
+            <h2 className="text-2xl sm:text-4xl lg:text-5xl font-creato font-semibold tracking-tight text-white uppercase">
               SHOWREEL / 2026
             </h2>
           </div>
 
-          <div className="mt-4 sm:mt-0 text-xs sm:text-sm font-mono text-[#86868B] uppercase tracking-wider flex items-center gap-4">
+          <div className="mt-3 sm:mt-0 text-xs sm:text-sm font-creato text-[#86868B] uppercase tracking-wider flex items-center gap-3">
             <span>Duration · {showreelData.duration}</span>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           </div>
         </div>
 
-        {/* Large Cinematic Video Container (2.39:1 Cinema Scope) */}
+        {/* Proportional Video Showcase Container (Balanced size, not oversized) */}
         <div
           ref={containerRef}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          className="relative w-full aspect-[16/9] sm:aspect-[2.39/1] bg-[#0E0E10] rounded-2xl sm:rounded-3xl overflow-hidden border border-white/10 shadow-[0_30px_90px_rgba(0,0,0,0.8)] select-none group"
+          className="relative w-full aspect-[16/9] bg-[#0E0E10] rounded-2xl overflow-hidden border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.6)] select-none group"
         >
           {/* High-res Cinema Poster */}
           <img
@@ -113,24 +113,24 @@ export const ReelSection: React.FC = () => {
 
           {/* Minimal Controls Affordance */}
           <div
-            className={`absolute bottom-6 right-6 z-20 flex items-center gap-3 transition-opacity duration-300 ${
-              isHovered ? 'opacity-100' : 'opacity-80'
+            className={`absolute bottom-5 right-5 z-20 flex items-center gap-2.5 transition-opacity duration-300 ${
+              isHovered ? 'opacity-100' : 'opacity-85'
             }`}
           >
             <button
               type="button"
               onClick={togglePlay}
               aria-label={isPlaying ? 'Pause Showreel' : 'Play Showreel'}
-              className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/15 text-white text-xs font-medium tracking-tight flex items-center gap-2 transition-all hover:scale-105"
+              className="px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/15 text-white text-xs font-medium tracking-tight flex items-center gap-2 transition-all hover:scale-105"
             >
               {isPlaying ? (
                 <>
-                  <Pause className="w-3.5 h-3.5 fill-current" />
+                  <Pause className="w-3 h-3 fill-current" />
                   <span>Pause</span>
                 </>
               ) : (
                 <>
-                  <Play className="w-3.5 h-3.5 fill-current" />
+                  <Play className="w-3 h-3 fill-current" />
                   <span>Play</span>
                 </>
               )}
@@ -140,15 +140,15 @@ export const ReelSection: React.FC = () => {
               type="button"
               onClick={toggleSound}
               aria-label={isMuted ? 'Unmute Showreel' : 'Mute Showreel'}
-              className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/15 text-white flex items-center justify-center transition-all hover:scale-105"
+              className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/15 text-white flex items-center justify-center transition-all hover:scale-105"
             >
-              {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+              {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
             </button>
           </div>
         </div>
 
         {/* Supporting Caption */}
-        <p className="mt-8 text-sm sm:text-base text-[#86868B] max-w-2xl leading-relaxed font-normal">
+        <p className="mt-5 text-xs sm:text-sm text-[#86868B] max-w-xl leading-relaxed font-normal font-creato">
           {showreelData.description}
         </p>
       </div>

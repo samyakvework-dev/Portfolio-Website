@@ -189,28 +189,28 @@ export const Hero: React.FC<HeroProps> = ({ onExploreWork }) => {
       <div className="relative z-10 pt-4">
         <div className="inline-flex items-center gap-2.5 text-xs font-creato uppercase tracking-[0.2em] text-[#686764]">
           <span className="w-1.5 h-1.5 rounded-full bg-[#171717]" />
-          <span>Motion Designer & Art Director</span>
+          <span>Video Editor & Motion Designer</span>
           <span className="text-[#9A9185]">/</span>
           <span className="text-[#9A9185]">Archive 2024–2026</span>
         </div>
       </div>
 
       {/* 05. Core Typography — Large, Confident, Editorial Restraint */}
-      <div className="relative z-10 my-auto py-12 max-w-5xl">
+      <div className="relative z-10 my-auto py-8 sm:py-12 max-w-5xl">
         <h1 className="hero-headline text-[#171717] font-creato">
           Crafting <span className="font-editorial font-normal text-[#171717]">movement</span>, identity & visual stories.
         </h1>
-        <p className="mt-8 text-lg sm:text-xl lg:text-2xl text-[#686764] font-creato font-normal max-w-2xl leading-relaxed tracking-tight">
+        <p className="mt-6 sm:mt-8 text-lg sm:text-xl lg:text-2xl text-[#686764] font-creato font-normal max-w-2xl leading-relaxed tracking-tight">
           {siteConfig.subheadline}
         </p>
       </div>
 
       {/* 06. Bottom Editorial Metadata & Action Trigger */}
       <div className="relative z-10 pt-8 border-t border-black/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-6 text-xs font-creato text-[#686764] tracking-wider uppercase">
-        <div className="flex flex-wrap items-center gap-8">
+        <div className="flex flex-wrap items-center gap-6 sm:gap-8">
           <div>
             <span className="text-black/40 block mb-1 text-[11px] tracking-[0.14em]">Focus</span>
-            <span className="text-[#171717] font-medium tracking-normal text-xs">Brand Motion · 3D · Direction</span>
+            <span className="text-[#171717] font-medium tracking-normal text-xs">{siteConfig.focus}</span>
           </div>
           <div>
             <span className="text-black/40 block mb-1 text-[11px] tracking-[0.14em]">Location</span>

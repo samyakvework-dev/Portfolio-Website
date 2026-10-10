@@ -3,42 +3,101 @@ import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { SelectedWork } from './components/SelectedWork';
 import { CreativeProcess } from './components/CreativeProcess';
-import { Experiments } from './components/Experiments';
 import { ReelSection } from './components/ReelSection';
-import { ProjectIndex } from './components/ProjectIndex';
 import { AboutSection } from './components/AboutSection';
 import { ServicesSection } from './components/ServicesSection';
 import { ContactSection } from './components/ContactSection';
 import { Footer } from './components/Footer';
 import { CaseStudyModal } from './components/CaseStudyModal';
-import { projects, type Project } from './data/projects';
+import { VideoEditingPage } from './pages/VideoEditingPage';
+import { MotionGraphicsPage } from './pages/MotionGraphicsPage';
+import { GraphicDesignPage } from './pages/GraphicDesignPage';
+import { AboutPage } from './pages/AboutPage';
+import { ContactPage } from './pages/ContactPage';
+import { AdminPage } from './pages/AdminPage';
+import { projects as defaultProjects, fetchLiveProjects, type Project } from './data/projects';
 
 export const App: React.FC = () => {
+  const [currentPath, setCurrentPath] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname;
+      const hash = window.location.hash;
+      if (path.startsWith('/admin') || hash === '#admin') return '/admin';
+      if (path.startsWith('/video-editing') || hash === '#video-editing') return '/video-editing';
+      if (path.startsWith('/motion-graphics') || hash === '#motion-graphics') return '/motion-graphics';
+      if (path.startsWith('/graphic-design') || hash === '#graphic-design') return '/graphic-design';
+      if (path.startsWith('/about') || hash === '#about') return '/about';
+      if (path.startsWith('/contact') || hash === '#contact') return '/contact';
+    }
+    return '/';
+  });
+
+  const [allProjects, setAllProjects] = useState<Project[]>(defaultProjects);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
-  // Sync state with URL hash (e.g. #work/spotify-motion-system)
+  // Fetch live projects from persistent backend on mount
   useEffect(() => {
-    const handleHash = () => {
+    fetchLiveProjects().then((live) => {
+      if (Array.isArray(live) && live.length > 0) {
+        setAllProjects(live);
+      }
+    });
+  }, [currentPath]);
+
+  // Sync state with URL path & hash
+  useEffect(() => {
+    const handleLocationChange = () => {
+      const path = window.location.pathname;
       const hash = window.location.hash;
+
+      // Handle Case Study Modal deep links: #work/slug
       if (hash.startsWith('#work/')) {
         const slug = hash.replace('#work/', '');
-        const found = projects.find((p) => p.slug === slug || p.id === slug);
+        const found = allProjects.find((p) => p.slug === slug || p.id === slug);
         if (found) {
           setSelectedProject(found);
           return;
         }
+      } else {
+        setSelectedProject(null);
       }
-      setSelectedProject(null);
+
+      // Check routes
+      if (path.startsWith('/admin') || hash === '#admin') {
+        setCurrentPath('/admin');
+      } else if (path.startsWith('/video-editing') || hash === '#video-editing') {
+        setCurrentPath('/video-editing');
+      } else if (path.startsWith('/motion-graphics') || hash === '#motion-graphics') {
+        setCurrentPath('/motion-graphics');
+      } else if (path.startsWith('/graphic-design') || hash === '#graphic-design') {
+        setCurrentPath('/graphic-design');
+      } else if (path.startsWith('/about') || hash === '#about') {
+        setCurrentPath('/about');
+      } else if (path.startsWith('/contact') || hash === '#contact') {
+        setCurrentPath('/contact');
+      } else {
+        setCurrentPath('/');
+      }
     };
 
-    handleHash();
-    window.addEventListener('hashchange', handleHash);
-    return () => window.removeEventListener('hashchange', handleHash);
+    handleLocationChange();
+    window.addEventListener('popstate', handleLocationChange);
+    window.addEventListener('hashchange', handleLocationChange);
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+      window.removeEventListener('hashchange', handleLocationChange);
+    };
+  }, [allProjects]);
+
+  const navigateTo = useCallback((targetPath: string) => {
+    setCurrentPath(targetPath);
+    window.history.pushState(null, '', targetPath);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   const handleSelectProject = useCallback((project: Project) => {
     setSelectedProject(project);
-    window.location.hash = `work/${project.slug}`;
+    window.location.hash = `work/${project.slug || project.id}`;
   }, []);
 
   const handleCloseCaseStudy = useCallback(() => {
@@ -50,65 +109,120 @@ export const App: React.FC = () => {
 
   const handleNextProject = useCallback(() => {
     if (!selectedProject) return;
-    const currentIndex = projects.findIndex((p) => p.id === selectedProject.id);
-    const nextIndex = (currentIndex + 1) % projects.length;
-    const nextProject = projects[nextIndex];
+    const currentIndex = allProjects.findIndex((p) => p.id === selectedProject.id);
+    const nextIndex = (currentIndex + 1) % allProjects.length;
+    const nextProject = allProjects[nextIndex];
     setSelectedProject(nextProject);
-    window.location.hash = `work/${nextProject.slug}`;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [selectedProject]);
+    window.location.hash = `work/${nextProject.slug || nextProject.id}`;
+  }, [selectedProject, allProjects]);
 
-  const handleNavigateSection = (sectionId: string) => {
-    if (selectedProject) {
-      handleCloseCaseStudy();
-    }
-    const target = document.getElementById(sectionId);
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Scroll to section on home page
+  const handleScrollToSection = (sectionId: string) => {
+    if (currentPath !== '/') {
+      navigateTo('/');
+      setTimeout(() => {
+        const target = document.getElementById(sectionId);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    } else {
+      const target = document.getElementById(sectionId);
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 
+  // --------------------------------------------------------------------------
+  // ADMIN DASHBOARD ROUTE: /admin
+  // --------------------------------------------------------------------------
+  if (currentPath === '/admin') {
+    return (
+      <div className="relative min-h-screen bg-[#F5F4F0] text-[#171717] font-creato">
+        <Navbar currentPath="/admin" onNavigate={navigateTo} />
+        <main className="w-full">
+          <AdminPage />
+        </main>
+        <Footer onNavigate={navigateTo} />
+      </div>
+    );
+  }
+
+  // --------------------------------------------------------------------------
+  // PUBLIC PORTFOLIO DESTINATIONS
+  // --------------------------------------------------------------------------
   return (
     <div className="relative min-h-screen bg-[#F5F4F0] text-[#171717] selection:bg-[#171717] selection:text-[#F5F4F0] font-creato">
-      {/* Minimal Sticky Navigation */}
-      <Navbar
-        onNavigate={handleNavigateSection}
-        onOpenContact={() => handleNavigateSection('contact')}
-      />
+      {/* Sticky Minimal Navigation */}
+      <Navbar currentPath={currentPath} onNavigate={navigateTo} />
 
       <main className="w-full">
-        {/* 01 — HERO with Cursor Reveal Effect */}
-        <Hero onExploreWork={() => handleNavigateSection('work')} />
+        {/* Route 1: Video Editing Dedicated Page */}
+        {currentPath === '/video-editing' && (
+          <VideoEditingPage
+            projects={allProjects}
+            onSelectProject={handleSelectProject}
+          />
+        )}
 
-        {/* 02 — SELECTED WORK (Clean Editorial Rhythm) */}
-        <SelectedWork onSelectProject={handleSelectProject} />
+        {/* Route 2: Motion Graphics Dedicated Page */}
+        {currentPath === '/motion-graphics' && (
+          <MotionGraphicsPage
+            projects={allProjects}
+            onSelectProject={handleSelectProject}
+          />
+        )}
 
-        {/* 03 — CREATIVE PROCESS (5-Step Editorial Journey) */}
-        <CreativeProcess />
+        {/* Route 3: Graphic Design Dedicated Page */}
+        {currentPath === '/graphic-design' && (
+          <GraphicDesignPage
+            projects={allProjects}
+            onSelectProject={handleSelectProject}
+          />
+        )}
 
-        {/* 04 — EXPERIMENTS (AI / 3D / Motion / Web Laboratory) */}
-        <Experiments />
+        {/* Route 4: About Dedicated Page */}
+        {currentPath === '/about' && (
+          <AboutPage onNavigateContact={() => navigateTo('/contact')} />
+        )}
 
-        {/* 05 — DEDICATED DARK CINEMATIC SHOWREEL */}
-        <ReelSection />
+        {/* Route 5: Contact Dedicated Page */}
+        {currentPath === '/contact' && (
+          <ContactPage />
+        )}
 
-        {/* 06 — COMPLETE PROJECT ARCHIVE INDEX */}
-        <ProjectIndex onSelectProject={handleSelectProject} />
+        {/* Route 6: Home Page (Flagship Featured Showcases & Portals) */}
+        {currentPath === '/' && (
+          <>
+            {/* 01 — HERO (Approved identity, focus pills) */}
+            <Hero onExploreWork={() => handleScrollToSection('work')} />
 
-        {/* 07 — ABOUT PERSPECTIVE, CRAFT & CITADEL SIGNATURE */}
-        <AboutSection />
+            {/* 02 — SELECTED WORK (Preserves top 3 showcases in order: Spotify, Nike, Apple Music + Discipline Portals) */}
+            <SelectedWork
+              projects={allProjects}
+              onSelectProject={handleSelectProject}
+              onNavigateCategory={navigateTo}
+            />
 
-        {/* 08 — SERVICES & CAPABILITIES */}
-        <ServicesSection />
+            {/* 03 — CREATIVE PROCESS (Disciplined 5-phase workflow, tightened spacing) */}
+            <CreativeProcess />
 
-        {/* 09 — CONTACT FINALE & LET'S CREATE → CTA */}
-        <ContactSection />
+            {/* 04 — SHOWREEL 2026 (Proportional container, no excessive free space) */}
+            <ReelSection />
+
+            {/* 05 — ABOUT PERSPECTIVE (Authentic disciplines & Citadel signature) */}
+            <AboutSection onNavigateAbout={() => navigateTo('/about')} />
+
+            {/* 06 — SERVICES & DISCIPLINES (Approved 3 services: Video, Motion, Graphic Design) */}
+            <ServicesSection />
+
+            {/* 07 — CONTACT SECTION & DIRECT INQUIRY (Balanced 2 columns, email copy) */}
+            <ContactSection />
+          </>
+        )}
       </main>
 
-      {/* 10 — MINIMAL CINEMATIC FOOTER */}
-      <Footer />
+      {/* Minimal Cinematic Footer */}
+      <Footer onNavigate={navigateTo} />
 
-      {/* DEEP-DIVE EDITORIAL CASE STUDY MODAL */}
+      {/* Deep-Dive Case Study Modal */}
       <CaseStudyModal
         project={selectedProject}
         onClose={handleCloseCaseStudy}

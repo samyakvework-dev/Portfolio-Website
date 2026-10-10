@@ -83,8 +83,10 @@ export const CaseStudyModal: React.FC<CaseStudyModalProps> = ({
           </p>
         </div>
 
-        {/* Large Cinematic Hero Media */}
-        <div className="rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-black/[0.08] mb-20 bg-black">
+        {/* Cinematic Hero Media */}
+        <div className={`rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-black/[0.08] mb-16 bg-black ${
+          project.aspectRatio === '9/16' ? 'max-w-[420px] mx-auto' : 'max-w-5xl mx-auto'
+        }`}>
           <VideoFrame
             src={project.video}
             poster={project.poster}

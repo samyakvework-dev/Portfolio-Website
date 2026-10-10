@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { siteConfig } from '../data/site';
-import { Compass, Sparkles, Layers, PlayCircle, Award } from 'lucide-react';
+import { Compass, Sparkles, Scissors, PlayCircle, Award } from 'lucide-react';
 
 export const CreativeProcess: React.FC = () => {
   const [activeStep, setActiveStep] = useState(0);
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  const icons = [Compass, Sparkles, Layers, PlayCircle, Award];
+  const icons = [Compass, Sparkles, Scissors, PlayCircle, Award];
 
-  // Intersection observer to track which step is currently most visible in viewport
   useEffect(() => {
     const observers: IntersectionObserver[] = [];
 
@@ -32,145 +31,123 @@ export const CreativeProcess: React.FC = () => {
   }, []);
 
   return (
-    <section id="process" className="w-full py-28 md:py-36 lg:py-44 max-w-[1500px] mx-auto px-6 sm:px-10 lg:px-16 bg-[#F5F4F0]">
-      {/* Section Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between mb-20 md:mb-28 pb-8 border-b border-black/[0.08]">
+    <section id="process" className="w-full py-16 md:py-24 max-w-[1500px] mx-auto px-6 sm:px-10 lg:px-16 bg-[#F5F4F0]">
+      {/* Section Header — Tightly Spaced */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 sm:mb-16 pb-6 border-b border-black/[0.08]">
         <div>
-          <span className="text-xs font-creato uppercase tracking-[0.2em] text-[#9A9185] block mb-3">
+          <span className="text-xs font-creato uppercase tracking-[0.2em] text-[#9A9185] block mb-2">
             02 / METHODOLOGY
           </span>
           <h2 className="section-headline text-[#171717] font-creato">
             CREATIVE PROCESS
           </h2>
-          <p className="mt-3 text-xl sm:text-2xl text-[#686764] font-editorial">
-            From abstract concept to visceral movement.
+          <p className="mt-2 text-lg sm:text-xl text-[#686764] font-editorial">
+            From narrative concept to finished frame.
           </p>
         </div>
 
-        <p className="mt-6 md:mt-0 text-sm sm:text-base text-[#686764] font-creato max-w-md font-normal leading-relaxed">
-          A disciplined 5-phase motion trajectory balancing conceptual precision, neural exploration, and mathematical execution.
+        <p className="mt-4 md:mt-0 text-xs sm:text-sm text-[#686764] font-creato max-w-sm font-normal">
+          A disciplined 5-phase trajectory balancing editorial timing, rhythmic precision, and color science.
         </p>
       </div>
 
-      {/* Vertical Timeline & Process Steps */}
-      <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
-        {/* Left Sticky Process Overview Column */}
-        <div className="hidden lg:block lg:col-span-4 sticky top-32 space-y-6">
-          <div className="p-8 rounded-2xl bg-[#ECEBE7] border border-black/[0.06]">
-            <div className="text-xs font-creato uppercase tracking-[0.18em] text-[#9A9185] mb-2">
+      {/* 2-Column Responsive Layout: Sticky Summary Left, Scrolling Timeline Right */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
+        {/* Left Sticky Progress Summary */}
+        <div className="lg:col-span-4 lg:sticky lg:top-28 space-y-6">
+          <div className="p-6 rounded-2xl bg-[#ECEBE7] border border-black/[0.06] shadow-sm">
+            <span className="text-[11px] font-creato uppercase tracking-[0.16em] text-[#9A9185] block mb-2">
               Timeline Progress
+            </span>
+            <div className="text-xl font-creato font-semibold text-[#171717]">
+              Step 0{activeStep + 1} — {siteConfig.creativeProcess[activeStep]?.title}
             </div>
-            <div className="text-2xl font-creato font-medium text-[#171717] tracking-tight mb-4">
-              Step {siteConfig.creativeProcess[activeStep]?.step} — {siteConfig.creativeProcess[activeStep]?.title}
-            </div>
-            <p className="text-sm font-creato text-[#686764] leading-relaxed">
+            <p className="mt-1 text-xs text-[#686764] font-creato">
               {siteConfig.creativeProcess[activeStep]?.subtitle}
             </p>
 
-            {/* Micro Progress Bar */}
-            <div className="mt-8 pt-6 border-t border-black/[0.08]">
-              <div className="flex items-center justify-between text-xs font-creato text-[#686764] mb-2">
-                <span>Phase Progress</span>
-                <span className="font-medium text-[#171717]">
-                  {Math.round(((activeStep + 1) / siteConfig.creativeProcess.length) * 100)}%
-                </span>
-              </div>
-              <div className="w-full h-1 bg-black/[0.08] rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-[#171717] transition-all duration-500 ease-out"
-                  style={{ width: `${((activeStep + 1) / siteConfig.creativeProcess.length) * 100}%` }}
-                />
-              </div>
+            {/* Visual Progress Bar */}
+            <div className="mt-5 w-full bg-black/10 h-1.5 rounded-full overflow-hidden">
+              <div
+                className="bg-[#171717] h-full transition-all duration-500 ease-out rounded-full"
+                style={{ width: `${((activeStep + 1) / siteConfig.creativeProcess.length) * 100}%` }}
+              />
+            </div>
+
+            <div className="mt-3 flex justify-between text-[11px] font-creato text-[#9A9185]">
+              <span>Phase Progress</span>
+              <span>{Math.round(((activeStep + 1) / siteConfig.creativeProcess.length) * 100)}%</span>
             </div>
           </div>
         </div>
 
-        {/* Right Vertical Steps Journey */}
-        <div className="lg:col-span-8 relative">
-          {/* Thin elegant vertical progress line */}
-          <div
-            className="absolute left-6 sm:left-8 top-8 bottom-8 w-px bg-black/[0.08] pointer-events-none"
-            aria-hidden="true"
-          >
-            <div
-              className="w-full bg-[#171717] transition-all duration-700 ease-out"
-              style={{
-                height: `${(activeStep / (siteConfig.creativeProcess.length - 1)) * 100}%`,
-              }}
-            />
-          </div>
+        {/* Right Scrolling Timeline Items */}
+        <div className="lg:col-span-8 relative border-l border-black/[0.1] pl-6 sm:pl-10 space-y-8 sm:space-y-12">
+          {siteConfig.creativeProcess.map((step, idx) => {
+            const Icon = icons[idx] || Sparkles;
+            const isActive = activeStep === idx;
 
-          <div className="space-y-12 sm:space-y-16">
-            {siteConfig.creativeProcess.map((item, idx) => {
-              const Icon = icons[idx % icons.length];
-              const isActive = activeStep === idx;
-
-              return (
+            return (
+              <div
+                key={step.step}
+                ref={(el) => {
+                  stepRefs.current[idx] = el;
+                }}
+                className={`relative transition-all duration-500 ${
+                  isActive ? 'opacity-100' : 'opacity-65 hover:opacity-90'
+                }`}
+              >
+                {/* Node on Vertical Timeline Line */}
                 <div
-                  key={item.step}
-                  ref={(el) => {
-                    stepRefs.current[idx] = el;
-                  }}
-                  onClick={() => setActiveStep(idx)}
-                  className={`group relative pl-16 sm:pl-20 transition-all duration-500 cursor-pointer ${
-                    isActive ? 'opacity-100' : 'opacity-65 hover:opacity-90'
+                  className={`absolute -left-[31px] sm:-left-[47px] top-6 w-5 h-5 rounded-full border-2 transition-all duration-300 flex items-center justify-center text-[10px] font-creato font-bold ${
+                    isActive
+                      ? 'bg-[#171717] border-[#171717] text-white scale-125'
+                      : 'bg-[#F5F4F0] border-black/30 text-[#686764]'
                   }`}
                 >
-                  {/* Step Node Indicator on Progress Path */}
-                  <div
-                    className={`absolute left-3.5 sm:left-5.5 top-1 -translate-x-1/2 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-500 ${
-                      isActive
-                        ? 'bg-[#171717] text-white shadow-[0_2px_8px_rgba(0,0,0,0.15)] scale-110'
-                        : 'bg-[#F5F4F0] border border-black/[0.18] text-[#9A9185] group-hover:border-black/50'
-                    }`}
-                  >
-                    <span className="text-[10px] font-creato font-semibold">
-                      {item.step}
+                  {step.step}
+                </div>
+
+                {/* Step Card */}
+                <div className="p-6 sm:p-7 rounded-2xl bg-[#ECEBE7] border border-black/[0.06] hover:border-black/[0.12] transition-colors">
+                  <div className="flex items-center justify-between gap-4 mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-black/5 flex items-center justify-center text-[#171717]">
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-creato uppercase tracking-wider text-[#9A9185] block">
+                          Phase {step.step}
+                        </span>
+                        <h3 className="text-lg sm:text-xl font-creato font-semibold text-[#171717]">
+                          {step.title}
+                        </h3>
+                      </div>
+                    </div>
+                    <span className="text-xs font-editorial text-[#686764] hidden sm:inline">
+                      {step.subtitle}
                     </span>
                   </div>
 
-                  {/* Step Content Container */}
-                  <div className="p-7 sm:p-9 rounded-2xl bg-[#ECEBE7] border border-black/[0.06] transition-all duration-500 group-hover:translate-x-1 group-hover:border-black/[0.12] group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.03)]">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-black/[0.05] flex items-center justify-center text-[#171717]">
-                          <Icon className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <span className="text-xs font-creato uppercase tracking-[0.16em] text-[#9A9185]">
-                            Phase {item.step}
-                          </span>
-                          <h3 className="text-xl sm:text-2xl font-creato font-medium text-[#171717] tracking-tight">
-                            {item.title}
-                          </h3>
-                        </div>
-                      </div>
+                  <p className="text-xs sm:text-sm text-[#686764] leading-relaxed font-creato mt-2">
+                    {step.description}
+                  </p>
 
-                      <div className="text-sm font-editorial text-[#686764]">
-                        {item.subtitle}
-                      </div>
-                    </div>
-
-                    <p className="text-sm sm:text-base font-creato text-[#686764] leading-relaxed mb-6 font-normal">
-                      {item.description}
-                    </p>
-
-                    {/* Keywords / Deliverables Pills */}
-                    <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-black/[0.06]">
-                      {item.keywords.map((kw) => (
-                        <span
-                          key={kw}
-                          className="px-3 py-1 rounded-full text-xs font-creato bg-white/70 text-[#171717] border border-black/[0.05]"
-                        >
-                          {kw}
-                        </span>
-                      ))}
-                    </div>
+                  {/* Keywords */}
+                  <div className="mt-4 pt-4 border-t border-black/[0.06] flex flex-wrap gap-2">
+                    {step.keywords.map((kw, i) => (
+                      <span
+                        key={i}
+                        className="text-[11px] font-creato text-[#686764] bg-black/[0.04] px-2.5 py-0.5 rounded-full"
+                      >
+                        {kw}
+                      </span>
+                    ))}
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>

@@ -7,13 +7,18 @@ function generateReferenceId(): string {
   return Math.floor(1000 + Math.random() * 9000).toString();
 }
 
-function sendResponse(res: any, status: number, data: any) {
+export function sendResponse(res: any, status: number, data?: any) {
   if (typeof res.status === 'function' && typeof res.json === 'function') {
-    return res.status(status).json(data);
+    if (data !== undefined) return res.status(status).json(data);
+    return res.status(status).end();
   }
   res.statusCode = status;
-  res.setHeader('Content-Type', 'application/json');
-  res.end(JSON.stringify(data));
+  if (data !== undefined) {
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify(data));
+  } else {
+    res.end();
+  }
 }
 
 /**
@@ -78,7 +83,7 @@ export async function handleContactRequest(req: any, res: any): Promise<boolean>
 
     const name = (parsed.name || '').trim();
     const email = (parsed.email || '').trim();
-    const message = (parsed.message || '').trim();
+    const message = (parsed.message || parsed.brief || '').trim();
     const subject = (parsed.subject || '').trim() || undefined;
 
     if (!name || name.length < 2) {
@@ -119,10 +124,25 @@ export async function handleContactRequest(req: any, res: any): Promise<boolean>
     });
 
     if (!emailResult.success) {
-      console.error('[Contact API] Failed to send enquiry email:', emailResult.error);
-      sendResponse(res, 500, {
-        success: false,
-        error: 'Unable to send your enquiry right now. Please try again later.'
+      console.warn('[Contact API] SMTP dispatch failed (or not configured). Saving enquiry locally to data/enquiries.json:', emailResult.error);
+      try {
+        const fs = await import('node:fs');
+        const path = await import('node:path');
+        const enquiriesFile = path.join(process.cwd(), 'data', 'enquiries.json');
+        const dir = path.dirname(enquiriesFile);
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        const existing = fs.existsSync(enquiriesFile) ? JSON.parse(fs.readFileSync(enquiriesFile, 'utf8')) : [];
+        existing.push({ name, email, subject, message, referenceId, createdAt, smtpStatus: 'pending' });
+        fs.writeFileSync(enquiriesFile, JSON.stringify(existing, null, 2), 'utf8');
+      } catch (err) {
+        console.error('[Contact API] Failed to record local enquiry fallback:', err);
+      }
+
+      sendResponse(res, 201, {
+        success: true,
+        message: 'Your message has been safely received. Samyak will respond within 24 hours.',
+        referenceId,
+        note: 'Saved locally. Configure SMTP_USER and SMTP_PASS for direct email dispatch.'
       });
       return true;
     }

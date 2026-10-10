@@ -16,8 +16,9 @@ dist-ssr
 !.env.example
 *.local
 
-# Data / Temp
-/data/
+# Data / Secrets
+/data/admin-config.json
+/data/enquiries.json
 *.sqlite
 *.db
 

@@ -3,8 +3,10 @@
  * SITE CONFIGURATION & EDITORIAL METADATA
  * ============================================================================
  * 
- * Centralized site information. You can edit your bio, email, availability,
- * social links, and services directly here in VS Code without touching code.
+ * Accurately represents Samyak Mahajan:
+ * - Video Editor
+ * - Motion Graphics Designer
+ * - Graphic Designer
  * ============================================================================
  */
 
@@ -24,14 +26,15 @@ export interface Capability {
 
 export const siteConfig = {
   name: "Samyak Mahajan",
-  role: "Motion Designer & Art Director",
-  headline: "Motion Designer crafting movement, identity & visual stories.",
-  subheadline: "I design motion identities, visual systems, and cinematic experiences for forward-thinking brands, products, and culture.",
+  role: "Video Editor · Motion Graphics · Graphic Designer",
+  headline: "Crafting movement, identity & visual stories.",
+  subheadline: "Commercial editing, dynamic motion graphics, and visual design systems built with rhythmic precision, pacing, and intent.",
   aboutStatement: "I turn ideas into movement.",
   aboutNarrative: [
-    "Motion is not decoration — it is behavior, hierarchy, and emotion. Over the past several years, I have collaborated with brands and creators to build visual languages that feel natural, tactile, and mathematically disciplined.",
-    "My practice sits at the intersection of graphic design, kinetic typography, and cinema finishing. By prioritizing pacing over speed and intention over flashiness, I craft motion systems that earn and reward human attention."
+    "Editing and motion design are not mere decoration — they are rhythm, narrative timing, and visual emotion. Over the past several years, I have collaborated with brands, creators, and directors to build visual languages that feel natural, tactile, and mathematically disciplined.",
+    "My practice sits at the intersection of video editing, kinetic typography, and graphic design. By prioritizing pacing over speed and intention over flashiness, I craft motion systems and edits that earn and reward human attention."
   ],
+  focus: "Video Editing · Motion Graphics · Graphic Design",
   location: "Worldwide · Remote",
   availability: "Available for Select Commissions",
   contactEmail: "samyakvework@gmail.com",
@@ -46,120 +49,60 @@ export const siteConfig = {
     {
       step: "01",
       title: "Discover",
-      subtitle: "Ideas & Inspiration",
-      description: "Deconstructing the core thesis. Before moving a single pixel, we dissect the emotional pulse, cadence, and cultural resonance that anchors the visual message.",
-      keywords: ["Auditory Analysis", "Visual Archetypes", "Rhythm Studies"]
+      subtitle: "Creative Brief & Sonic Rhythm",
+      description: "Deconstructing the core narrative. Before placing a single cut, we dissect the emotional pulse, cadence, and auditory transients that anchor the message.",
+      keywords: ["Auditory Analysis", "Narrative Beats", "Rhythm Studies"]
     },
     {
       step: "02",
-      title: "Explore",
-      subtitle: "AI & Concepts",
-      description: "Rapid visual prototyping combining generative neural tools, styleframes, and typographic stress-testing to unearth unforeseen aesthetic frontiers.",
-      keywords: ["Generative Ideation", "Styleframe Architecture", "Typographic Tension"]
+      title: "Concept",
+      subtitle: "Storyboards & Styleframes",
+      description: "Visual exploration combining styleframes, typographic tension, and compositional rules to establish the creative trajectory.",
+      keywords: ["Styleframe Architecture", "Typographic Direction", "Visual Hierarchy"]
     },
     {
       step: "03",
-      title: "Build",
-      subtitle: "3D & Creative Code",
-      description: "Constructing spatial assets, tactile shaders, lighting geometry, and algorithmic motion rules engineered for fidelity across physical and digital formats.",
-      keywords: ["Procedural Geometry", "ACES Shading", "Mathematical Curves"]
+      title: "Cut",
+      subtitle: "Editorial Assembly & Pacing",
+      description: "Carving out the story. Cutting on action, calibrating velocity ramps, and structuring retention arcs that keep viewers engaged from opening frame to finish.",
+      keywords: ["Retention Pacing", "Speed Ramping", "Action Cutting"]
     },
     {
       step: "04",
       title: "Animate",
-      subtitle: "Motion & Interaction",
-      description: "Breathing kinematic life into the composition. Choreographing velocity ramps, spring physics, and sound transients into an unbroken, hypnotic narrative.",
-      keywords: ["Spring Physics", "Temporal Easing", "Sound Reactivity"]
+      subtitle: "Motion Graphics & Kinetic Polish",
+      description: "Breathing kinematic life into the edit. Choreographing 2D kinetic typography, logo animations, and smooth vector transitions.",
+      keywords: ["Kinetic Typography", "Temporal Easing", "Vector Choreography"]
     },
     {
       step: "05",
-      title: "Create",
-      subtitle: "Final Experience",
-      description: "Master finishing, sub-pixel optical calibration, analog texture blending, and delivery at maximum cinematic fidelity across all viewing canvases.",
-      keywords: ["Master Grading", "Film Emulation", "Multi-Canvas Delivery"]
-    }
-  ],
-  experiments: [
-    {
-      id: "exp-01",
-      number: "01",
-      category: "AI",
-      title: "Neural Temporal Interpolation",
-      description: "Exploring recursive latent space transforms and AI frame synthesis driven by ambient frequency pulses.",
-      aspectRatio: "16/9",
-      mediaType: "image",
-      src: "/projects/project-03/poster.jpg",
-      tags: ["Latent Diffusion", "Optical Flow", "Generative"]
-    },
-    {
-      id: "exp-02",
-      number: "02",
-      category: "3D",
-      title: "Caustic Glass Refraction Lab",
-      description: "Real-time dispersive glass optics and volumetric light caustics calculated through procedural GPU shaders.",
-      aspectRatio: "4/3",
-      mediaType: "image",
-      src: "/projects/project-01/poster.jpg",
-      tags: ["Subsurface Optics", "Cinema 4D", "Octane"]
-    },
-    {
-      id: "exp-03",
-      number: "03",
-      category: "Motion",
-      title: "Kinetic Micro-Typography",
-      description: "Parametric variable type choreography reacting to cursor velocity and simulated surface friction.",
-      aspectRatio: "1/1",
-      mediaType: "image",
-      src: "/projects/project-02/poster.jpg",
-      tags: ["Kinetic Type", "Spring Dynamics", "Creative Code"]
-    },
-    {
-      id: "exp-04",
-      number: "04",
-      category: "Web",
-      title: "Spatial Interactive Viewport",
-      description: "WebGL canvas interaction mapping user gaze vectors into subtle 3D rotational parallax.",
-      aspectRatio: "16/9",
-      mediaType: "image",
-      src: "/projects/project-04/poster.jpg",
-      tags: ["Three.js", "Spatial Interaction", "Shader Art"]
+      title: "Finish",
+      subtitle: "Color Science & Master Delivery",
+      description: "Precision color grading, analog texture blending, sound design balance, and export across widescreen, desktop, and vertical mobile formats.",
+      keywords: ["DaVinci Color Grading", "Sound Transient Sync", "Multi-Canvas Delivery"]
     }
   ],
   capabilities: [
     {
       number: "01",
-      title: "Motion Identity & Design Systems",
-      category: "Brand Motion",
-      description: "Developing comprehensive motion guidelines, logo choreographies, and kinetic design tokens that anchor a brand's living digital persona.",
-      deliverables: ["Motion Guidelines", "Logo Animation", "UI Motion Tokens", "Lottie / Web Assets"]
+      title: "Video Editing & Post-Production",
+      category: "Video Editing",
+      description: "Rhythmically driven editing, sound-reactive pacing, and dynamic multi-layered cutting for commercial campaigns, spec ads, sports edits, and high-retention content.",
+      deliverables: ["Commercial Films", "High-Retention Edits", "Trailer & Spec Ads", "Color Grading & Audio Sync"]
     },
     {
       number: "02",
-      title: "Commercial Film & Editorial Direction",
-      category: "Direction & Edit",
-      description: "Rhythmically driven editing, sound-reactive pacing, and dynamic multi-layered compositing for promotional campaigns and brand anthems.",
-      deliverables: ["Campaign Films", "Trailer Editing", "Retention Pacing", "Sound Design"]
+      title: "Motion Graphics & Brand Animation",
+      category: "Motion Graphics",
+      description: "2D kinetic typography, logo choreographies, animated brand assets, and kinetic design tokens that anchor a brand's living identity.",
+      deliverables: ["Kinetic Typography", "Logo Animation", "Brand Motion Systems", "Social Motion Assets"]
     },
     {
       number: "03",
-      title: "3D & Spatial Product Choreography",
-      category: "3D & Simulation",
-      description: "Photorealistic material shaders, lighting architecture, and graceful physical object interactions built to showcase product precision.",
-      deliverables: ["Product Renders", "Spatial Visualisation", "Exploded Assemblies", "4K Loops"]
-    },
-    {
-      number: "04",
-      title: "Tactile UI & Interaction Motion",
-      category: "Product & Mobile",
-      description: "Fluid spring-physics transitions, gestural interfaces, and micro-interactions optimized for frictionless software experiences.",
-      deliverables: ["Prototyping", "Design System Motion", "Micro-interactions", "App Sequences"]
-    },
-    {
-      number: "05",
-      title: "Title Sequences & Cinema Finishing",
-      category: "Finishing & Colour",
-      description: "Custom typography design, analog grain textures, and ACES colour grading that imbue stories with cinematic presence.",
-      deliverables: ["Title Sequences", "ACES Colour Grading", "Film Emulation", "Master Delivery"]
+      title: "Graphic Design & Visual Identity",
+      category: "Graphic Design",
+      description: "High-impact editorial posters, typography layouts, album artwork, brand identity systems, and key campaign visuals that command attention.",
+      deliverables: ["Key Visuals & Posters", "Brand Identity Systems", "Typographic Layouts", "Editorial Collateral"]
     }
   ] as Capability[]
 };

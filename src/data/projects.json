@@ -1,0 +1,353 @@
+[
+  {
+    "id": "spotify-motion-system",
+    "slug": "spotify-motion-system",
+    "title": "Spotify — Kinetic Motion Identity",
+    "category": "Motion Graphics",
+    "subCategory": "Brand Motion",
+    "year": "2026",
+    "client": "Spotify Design",
+    "description": "A mathematical motion system choreographing soundwaves, fluid typography, and acoustic energy into living digital tokens.",
+    "video": "/projects/project-01/video.mp4",
+    "poster": "/projects/project-01/poster.jpg",
+    "thumbnail": "/projects/project-01/poster.jpg",
+    "aspectRatio": "16/9",
+    "featured": true,
+    "order": 1,
+    "published": true,
+    "tags": [
+      "Motion Design",
+      "Design System",
+      "After Effects",
+      "Kinetic Type"
+    ],
+    "caseStudy": {
+      "role": [
+        "Motion Designer",
+        "System Choreographer",
+        "Kinetic Typographer"
+      ],
+      "challenge": "Choreographing dynamic audio-reactive typography that scales across mobile UI and billboard canvases without losing typographic legibility.",
+      "concept": "Audio waveforms transformed into living typography. Pacing and elastic spring mechanics anchored to sonic transients.",
+      "motionSystem": "Custom spring curves with fluid damping, responsive to BPM variations and vocal frequencies.",
+      "results": "Selected as the core design token exploration for dynamic music visualizers.",
+      "credits": [
+        {
+          "role": "Motion Graphics Designer",
+          "name": "Samyak Mahajan"
+        }
+      ]
+    }
+  },
+  {
+    "id": "nike-kinetic-energy",
+    "slug": "nike-kinetic-energy",
+    "title": "Nike — High-Velocity Commercial Edit",
+    "category": "Video Editing",
+    "subCategory": "Commercial",
+    "year": "2026",
+    "client": "Nike Running",
+    "description": "High-velocity editorial pacing, speed ramp transitions, and sound-reactive typographics celebrating human momentum.",
+    "video": "/projects/project-02/video.mp4",
+    "poster": "/projects/project-02/poster.jpg",
+    "thumbnail": "/projects/project-02/poster.jpg",
+    "aspectRatio": "16/9",
+    "featured": true,
+    "order": 2,
+    "published": true,
+    "tags": [
+      "Video Editing",
+      "Commercial",
+      "Speed Ramps",
+      "Sound Sync"
+    ],
+    "caseStudy": {
+      "role": [
+        "Lead Video Editor",
+        "Sound Designer",
+        "Colorist"
+      ],
+      "challenge": "Capturing the breathless intensity of marathon runners at mile 20. The edit needed to feel physically demanding yet effortless in rhythm.",
+      "concept": "Cutting precisely on athlete footsteps and respiratory cadence, allowing sound transients to drive frame transitions.",
+      "motionSystem": "Custom speed-ramp curves matching biomechanical deceleration and explosive acceleration, paired with typographic kinetic flashes.",
+      "results": "Hero commercial edit demonstrating retention-focused pacing and rhythmic cutting.",
+      "credits": [
+        {
+          "role": "Video Editor",
+          "name": "Samyak Mahajan"
+        }
+      ]
+    }
+  },
+  {
+    "id": "apple-music-spatial",
+    "slug": "apple-music-spatial",
+    "title": "Apple Music — Visual Identity & Acoustic Waveforms",
+    "category": "Graphic Design",
+    "subCategory": "Visual Identity",
+    "year": "2025",
+    "client": "Spatial Audio Spec",
+    "description": "Visual identity and dynamic acoustic waveforms designed for immersive spatial audio campaigns and editorial artwork.",
+    "video": "/projects/project-03/video.mp4",
+    "poster": "/projects/project-03/poster.jpg",
+    "thumbnail": "/projects/project-03/poster.jpg",
+    "aspectRatio": "16/9",
+    "featured": true,
+    "order": 3,
+    "published": true,
+    "tags": [
+      "Graphic Design",
+      "Key Visuals",
+      "Brand Identity",
+      "Editorial Art"
+    ],
+    "caseStudy": {
+      "role": [
+        "Graphic Designer",
+        "Visual Artist"
+      ],
+      "challenge": "Visualizing multi-dimensional sound without falling back on generic equalizer bars or noisy particle clouds.",
+      "concept": "Clean architectural light and geometric rings representing acoustic depth, clarity, and spatial separation.",
+      "motionSystem": "Symmetrical concentric vector forms engineered for static album art and digital display formats.",
+      "results": "Campaign key visuals developed for spatial sound album rollouts.",
+      "credits": [
+        {
+          "role": "Graphic Designer",
+          "name": "Samyak Mahajan"
+        }
+      ]
+    }
+  },
+  {
+    "id": "f1-speed-pacing",
+    "slug": "f1-speed-pacing",
+    "title": "Formula 1 — High-Speed Championship Edit",
+    "category": "Video Editing",
+    "subCategory": "Sports & Action",
+    "year": "2026",
+    "client": "Motorsport Spec",
+    "description": "Adrenaline-fueled sports editorial featuring split-second match cuts, telemetry sound design, and aggressive velocity pacing.",
+    "video": "",
+    "poster": "/projects/project-02/poster.jpg",
+    "thumbnail": "/projects/project-02/poster.jpg",
+    "aspectRatio": "16/9",
+    "featured": false,
+    "order": 4,
+    "published": true,
+    "tags": [
+      "Sports Edit",
+      "Action Pacing",
+      "Sound Design",
+      "Premiere Pro"
+    ],
+    "caseStudy": {
+      "role": [
+        "Video Editor",
+        "Sound Designer"
+      ],
+      "challenge": "Conveying 300+ km/h speed without causing visual disorientation, maintaining narrative clarity across high-G cornering sequences.",
+      "concept": "Engine RPM-driven cut frequencies. Visual cuts sync directly with gear shifts and apex curbs.",
+      "motionSystem": "Impact cuts combined with micro-whip transitions and speed ramps.",
+      "results": "High-impact motorsport highlight piece with seamless audio-visual lock.",
+      "credits": [
+        {
+          "role": "Video Editor",
+          "name": "Samyak Mahajan"
+        }
+      ]
+    }
+  },
+  {
+    "id": "retention-narrative-edit",
+    "slug": "retention-narrative-edit",
+    "title": "High-Retention Vertical Narrative Edit",
+    "category": "Video Editing",
+    "subCategory": "Talking Head & Social",
+    "year": "2026",
+    "client": "Digital Creator Studio",
+    "description": "Fast-paced vertical talking-head edit optimized for retention with dynamic zooms, visual callouts, and sound accents.",
+    "video": "/projects/project-04/video.mp4",
+    "poster": "/projects/project-04/poster.jpg",
+    "thumbnail": "/projects/project-04/poster.jpg",
+    "aspectRatio": "9/16",
+    "featured": false,
+    "order": 5,
+    "published": true,
+    "tags": [
+      "Vertical 9:16",
+      "Retention Pacing",
+      "B-Roll Sync",
+      "Social Video"
+    ],
+    "caseStudy": {
+      "role": [
+        "Video Editor",
+        "Motion Designer"
+      ],
+      "challenge": "Maintaining 80%+ audience retention over a 60-second vertical video through visual storytelling and pacing.",
+      "concept": "No frame stays static for more than 1.5 seconds. Strategic b-roll inserts, animated graphic emphasis, and sound design.",
+      "motionSystem": "Velocity zooms, typographic punchlines, and micro-animations guiding the viewer's eye.",
+      "results": "High viewer completion rate and engagement across social channels.",
+      "credits": [
+        {
+          "role": "Video Editor",
+          "name": "Samyak Mahajan"
+        }
+      ]
+    }
+  },
+  {
+    "id": "frank-ocean-nights",
+    "slug": "frank-ocean-nights",
+    "title": "Frank Ocean — Nights Kinetic Typography",
+    "category": "Motion Graphics",
+    "subCategory": "Kinetic Typography",
+    "year": "2026",
+    "client": "Independent Motion Study",
+    "description": "Expressive 2D kinetic typography timed to vocal delivery, pitch bends, and beat switches.",
+    "video": "",
+    "poster": "/projects/project-01/poster.jpg",
+    "thumbnail": "/projects/project-01/poster.jpg",
+    "aspectRatio": "16/9",
+    "featured": false,
+    "order": 6,
+    "published": true,
+    "tags": [
+      "Kinetic Type",
+      "After Effects",
+      "Rhythm Sync",
+      "2D Motion"
+    ],
+    "caseStudy": {
+      "role": [
+        "Motion Graphics Designer"
+      ],
+      "challenge": "Translating intimate lyrical storytelling into compelling motion without overwhelming the vocal track.",
+      "concept": "Typography as voice. Weight, tracking, and velocity deform to mirror the vocalist's inflection.",
+      "motionSystem": "Sub-pixel keyframe easing, spatial typography transitions, and subtle analog chromatic textures.",
+      "results": "Widely shared typographic motion study celebrated for nuanced musical sync.",
+      "credits": [
+        {
+          "role": "Motion Graphics Designer",
+          "name": "Samyak Mahajan"
+        }
+      ]
+    }
+  },
+  {
+    "id": "frequency-audio-reactive",
+    "slug": "frequency-audio-reactive",
+    "title": "Frequency — Audio-Reactive Motion Identity",
+    "category": "Motion Graphics",
+    "subCategory": "Brand Motion",
+    "year": "2025",
+    "client": "Creative Audio Studio",
+    "description": "Procedural and keyframed motion graphics exploring visual rhythm, acoustic frequencies, and minimal graphic motion.",
+    "video": "",
+    "poster": "/projects/project-03/poster.jpg",
+    "thumbnail": "/projects/project-03/poster.jpg",
+    "aspectRatio": "16/9",
+    "featured": false,
+    "order": 7,
+    "published": true,
+    "tags": [
+      "Audio Reactive",
+      "Brand Motion",
+      "Graphic Identity",
+      "Animation"
+    ],
+    "caseStudy": {
+      "role": [
+        "Motion Graphics Designer"
+      ],
+      "challenge": "Creating an animated identity system that responds organically to live audio input.",
+      "concept": "Harmonic resonance. Minimal circular waveforms that expand and pulse to bass frequencies.",
+      "motionSystem": "Mathematical curves and easing equations governing velocity and scale.",
+      "results": "Dynamic identity package used across stage visualizers and digital platforms.",
+      "credits": [
+        {
+          "role": "Motion Designer",
+          "name": "Samyak Mahajan"
+        }
+      ]
+    }
+  },
+  {
+    "id": "scarface-editorial-poster",
+    "slug": "scarface-editorial-poster",
+    "title": "The Eyes Chico — Cinema Key Art & Poster",
+    "category": "Graphic Design",
+    "subCategory": "Poster Design",
+    "year": "2025",
+    "client": "Editorial Print Spec",
+    "description": "High-contrast cinematic tribute poster blending modernist Swiss typography, duotone halftones, and stark visual hierarchy.",
+    "video": "",
+    "poster": "/projects/project-05/poster.jpg",
+    "thumbnail": "/projects/project-05/poster.jpg",
+    "aspectRatio": "4/3",
+    "featured": false,
+    "order": 8,
+    "published": true,
+    "tags": [
+      "Poster Design",
+      "Print & Digital",
+      "Photoshop",
+      "Typography"
+    ],
+    "caseStudy": {
+      "role": [
+        "Graphic Designer",
+        "Typographer"
+      ],
+      "challenge": "Reinterpreting legendary cinema iconography through a contemporary graphic design and editorial lens.",
+      "concept": "Dramatic tension and stark contrasts. Black, ivory, and deep vermilion tones with surgical typography.",
+      "motionSystem": "Static print artwork created at 300 DPI with custom grain textures.",
+      "results": "Featured in independent design showcases.",
+      "credits": [
+        {
+          "role": "Graphic Designer",
+          "name": "Samyak Mahajan"
+        }
+      ]
+    }
+  },
+  {
+    "id": "swiss-typography-exhibition",
+    "slug": "swiss-typography-exhibition",
+    "title": "Modernist Typographic Identity & Layout",
+    "category": "Graphic Design",
+    "subCategory": "Editorial & Layout",
+    "year": "2025",
+    "client": "Visual Design Archive",
+    "description": "Grid-based typographic architecture, asymmetric layout balance, and disciplined negative space.",
+    "video": "",
+    "poster": "/projects/project-06/poster.jpg",
+    "thumbnail": "/projects/project-06/poster.jpg",
+    "aspectRatio": "4/3",
+    "featured": false,
+    "order": 9,
+    "published": true,
+    "tags": [
+      "Typography",
+      "Layout Design",
+      "Brand Guidelines",
+      "Illustrator"
+    ],
+    "caseStudy": {
+      "role": [
+        "Graphic Designer",
+        "Artworker"
+      ],
+      "challenge": "Balancing complex hierarchy with strict minimal aesthetics.",
+      "concept": "Negative space as form. The unprinted area is as critical as the typography itself.",
+      "motionSystem": "Asymmetric multi-column modular grid system.",
+      "results": "Published in typography portfolios and exhibition catalogs.",
+      "credits": [
+        {
+          "role": "Graphic Designer",
+          "name": "Samyak Mahajan"
+        }
+      ]
+    }
+  }
+]
