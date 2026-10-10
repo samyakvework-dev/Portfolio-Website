@@ -122,7 +122,7 @@ export const AdminPage: React.FC = () => {
         setToken(data.token);
         showToast('Authenticated as Administrator.');
       } else {
-        setLoginError(data.error || 'Invalid credentials. Default: samyakvework@gmail.com / SamyakStudio2026!');
+        setLoginError(data.error || 'Invalid administrator email or password.');
       }
     } catch (err: any) {
       setLoginError('Could not connect to authentication API.');
@@ -451,7 +451,7 @@ export const AdminPage: React.FC = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="samyakvework@gmail.com"
+                placeholder="admin@example.com"
                 className="w-full px-4 py-3 rounded-xl bg-white border border-black/[0.08] text-sm text-[#171717] focus:outline-none focus:border-black/40 transition-colors"
               />
             </div>
@@ -478,13 +478,6 @@ export const AdminPage: React.FC = () => {
               {isLoggingIn ? 'Authenticating...' : 'Sign In to Dashboard'}
             </button>
           </form>
-
-          {/* Quick Help Box for Samyak */}
-          <div className="mt-8 pt-6 border-t border-black/[0.08] text-xs text-[#686764] leading-relaxed">
-            <span className="font-semibold text-[#171717] block mb-1">Default Credentials:</span>
-            <span>Email: <code className="bg-white/80 px-1.5 py-0.5 rounded font-mono text-[#171717]">samyakvework@gmail.com</code></span><br />
-            <span>Password: <code className="bg-white/80 px-1.5 py-0.5 rounded font-mono text-[#171717]">SamyakStudio2026!</code></span>
-          </div>
         </div>
       </div>
     );
