@@ -37,14 +37,18 @@ CREATE INDEX IF NOT EXISTS idx_projects_order ON public.projects("order");
 -- 3. Enable Row Level Security (RLS)
 ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
 
--- 4. Public Access Policy: Anonymous visitors can only read published projects
+-- 4. Grant Table Permissions to Supabase Roles
+GRANT ALL ON TABLE public.projects TO service_role;
+GRANT SELECT ON TABLE public.projects TO anon, authenticated;
+
+-- 5. Public Access Policy: Anonymous visitors can only read published projects
 CREATE POLICY "Public read published projects" 
   ON public.projects 
   FOR SELECT 
   TO anon, authenticated
   USING (published = true);
 
--- 5. Admin Policy: Full CRUD for Service Role (used by your Vercel backend)
+-- 6. Admin Policy: Full CRUD for Service Role (used by your Vercel backend)
 CREATE POLICY "Service role full access" 
   ON public.projects 
   FOR ALL 
@@ -52,7 +56,7 @@ CREATE POLICY "Service role full access"
   USING (true) 
   WITH CHECK (true);
 
--- 6. Storage Bucket for Media (Videos & Postcards/Thumbnails)
+-- 7. Storage Bucket for Media (Videos & Postcards/Thumbnails)
 -- Create bucket if not exists via storage schema
 INSERT INTO storage.buckets (id, name, public) 
 VALUES ('portfolio-media', 'portfolio-media', true)
