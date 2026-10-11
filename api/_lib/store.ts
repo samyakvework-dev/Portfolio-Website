@@ -114,13 +114,34 @@ export function fromDbRecord(record: any): ProjectData {
 }
 
 /**
+ * Normalizes a Supabase project URL to its pure root origin (e.g. https://xyz.supabase.co)
+ * regardless of whether the user provided:
+ * - https://xyz.supabase.co
+ * - https://xyz.supabase.co/
+ * - https://xyz.supabase.co/rest/v1
+ * - https://xyz.supabase.co/rest/v1/
+ * - https://xyz.supabase.co/rest
+ * - or included any trailing whitespace or path segments.
+ */
+export function normalizeSupabaseUrl(rawUrl?: string): string {
+  if (!rawUrl) return '';
+  let url = rawUrl.trim();
+  // Strip trailing slashes
+  url = url.replace(/\/+$/, '');
+  // Strip any /rest/v1, /rest, or /storage/v1 suffixes that may have been copied from dashboard
+  url = url.replace(/\/(rest(\/v1)?|storage(\/v1)?).*$/i, '');
+  return url.replace(/\/+$/, '');
+}
+
+/**
  * Optional Supabase client helper using standard fetch
  */
 function getSupabaseConfig() {
-  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const rawUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
-  if (url && key) {
-    return { url: url.replace(/\/$/, ''), key };
+  if (rawUrl && key) {
+    const url = normalizeSupabaseUrl(rawUrl);
+    return { url, key: key.trim() };
   }
   return null;
 }
@@ -129,7 +150,10 @@ async function fetchFromSupabase(endpoint: string, options: RequestInit = {}): P
   const sb = getSupabaseConfig();
   if (!sb) return null;
 
-  const res = await fetch(`${sb.url}/rest/v1/${endpoint}`, {
+  const cleanEndpoint = endpoint.replace(/^\/+/, '');
+  const targetUrl = `${sb.url}/rest/v1/${cleanEndpoint}`;
+
+  const res = await fetch(targetUrl, {
     ...options,
     headers: {
       'apikey': sb.key,
@@ -142,7 +166,7 @@ async function fetchFromSupabase(endpoint: string, options: RequestInit = {}): P
 
   if (!res.ok) {
     const errorText = await res.text();
-    console.error('[Supabase Error]', res.status, errorText);
+    console.error(`[Supabase Error] HTTP ${res.status} on ${targetUrl}:`, errorText);
     throw new Error(`Database error (HTTP ${res.status}): ${errorText}`);
   }
 

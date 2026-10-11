@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { normalizeSupabaseUrl } from './store.js';
 
 const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg',
@@ -79,8 +80,9 @@ export async function saveUploadedFile(params: {
     const sbKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
     if (sbUrl && sbKey) {
       try {
+        const cleanSbUrl = normalizeSupabaseUrl(sbUrl);
         const bucket = 'portfolio-media';
-        const uploadRes = await fetch(`${sbUrl.replace(/\/$/, '')}/storage/v1/object/${bucket}/${finalFilename}`, {
+        const uploadRes = await fetch(`${cleanSbUrl}/storage/v1/object/${bucket}/${finalFilename}`, {
           method: 'POST',
           headers: {
             'apikey': sbKey,
@@ -91,7 +93,7 @@ export async function saveUploadedFile(params: {
         });
 
         if (uploadRes.ok) {
-          const publicUrl = `${sbUrl.replace(/\/$/, '')}/storage/v1/object/public/${bucket}/${finalFilename}`;
+          const publicUrl = `${cleanSbUrl}/storage/v1/object/public/${bucket}/${finalFilename}`;
           return { success: true, url: publicUrl };
         } else {
           const errText = await uploadRes.text();
@@ -158,7 +160,7 @@ export async function createSignedUploadUrl(params: {
   const bucket = 'portfolio-media';
 
   try {
-    const cleanSbUrl = sbUrl.replace(/\/$/, '');
+    const cleanSbUrl = normalizeSupabaseUrl(sbUrl);
     const signEndpoint = `${cleanSbUrl}/storage/v1/object/upload/sign/${bucket}/${finalFilename}`;
 
     const res = await fetch(signEndpoint, {
