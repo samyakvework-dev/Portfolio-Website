@@ -33,6 +33,18 @@ function apiDevPlugin(): Plugin {
           }
         }
 
+        // Route: /api/showreel
+        if (url.startsWith('/api/showreel')) {
+          try {
+            const mod = await server.ssrLoadModule('/api/showreel.ts');
+            const handler = mod.default;
+            await handler(req, res);
+            return;
+          } catch (err) {
+            console.error('[Vite dev middleware error - showreel]', err);
+          }
+        }
+
         // Route: /api/admin
         if (url.startsWith('/api/admin')) {
           try {

@@ -12,8 +12,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onNavigateContact }) => {
     { name: "After Effects", desc: "2D kinetic typography, logo animation, vector motion systems", category: "Motion Graphics" },
     { name: "DaVinci Resolve", desc: "Color correction, film emulation, ACES color science", category: "Finishing & Color" },
     { name: "Adobe Photoshop", desc: "Key visuals, cinema posters, duotone treatments, textures", category: "Graphic Design" },
-    { name: "Adobe Illustrator", desc: "Vector brand tokens, icon systems, Swiss grid layouts", category: "Graphic Design" },
-    { name: "Adobe Audition", desc: "Transient alignment, sound design mixing, stem cleanup", category: "Audio Sync" }
+    { name: "Adobe Illustrator", desc: "Vector brand tokens, icon systems, Swiss grid layouts", category: "Graphic Design" }
   ];
 
   return (

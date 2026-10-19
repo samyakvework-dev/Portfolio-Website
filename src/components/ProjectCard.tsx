@@ -20,6 +20,24 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
 
   const isVertical = project.aspectRatio === '9/16';
   const formattedNumber = String(projectNumber).padStart(2, '0');
+  const hasImage = Boolean(project.thumbnail || project.poster);
+
+  const getCardAspectRatioClass = () => {
+    if (project.aspectRatio === '9/16') return 'aspect-[9/16]';
+    if (project.aspectRatio === '4/3') return 'aspect-[4/3]';
+    if (project.aspectRatio === '1/1') return 'aspect-square';
+    if (typeof project.aspectRatio === 'string' && project.aspectRatio.includes('/')) {
+      const [w, h] = project.aspectRatio.split('/').map(Number);
+      if (w && h) {
+        if (h > w * 1.2) return 'aspect-[9/16]';
+        if (h > w) return 'aspect-[3/4]';
+        if (Math.abs(w - h) < 0.1) return 'aspect-square';
+        if (w > h * 1.5) return 'aspect-[16/9]';
+        return 'aspect-[4/3]';
+      }
+    }
+    return 'aspect-[16/9]';
+  };
 
   // Desktop hover playback
   const handleMouseEnter = () => {
@@ -48,7 +66,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
     }
   };
 
-  const showFallback = hasVideoError || !project.video || project.status === 'coming-soon';
+  const showFallback = (hasVideoError && !hasImage) || (!project.video && !hasImage) || project.status === 'coming-soon';
 
   return (
     <article
@@ -64,18 +82,16 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
       }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className={`group relative w-full overflow-hidden rounded-[24px] bg-[#161616] border border-white/8 hover:border-white/20 transition-all duration-500 ease-out cursor-pointer shadow-lg hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/70 select-none ${
-        isVertical ? 'aspect-[9/16]' : 'aspect-[16/9]'
-      }`}
+      className={`group relative w-full overflow-hidden rounded-[24px] bg-[#161616] border border-white/8 hover:border-white/20 transition-all duration-500 ease-out cursor-pointer shadow-lg hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/70 select-none ${getCardAspectRatioClass()}`}
     >
       {/* Visual media container */}
       <div className="absolute inset-0 w-full h-full bg-[#141414] overflow-hidden">
         {/* If video source is provided, attempt to render HTML5 video */}
-        {project.video && !hasVideoError && (
+        {project.video && !hasVideoError ? (
           <video
             ref={videoRef}
             src={project.video}
-            poster={project.thumbnail}
+            poster={project.thumbnail || project.poster}
             muted
             loop
             playsInline
@@ -86,12 +102,21 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
               isHovered ? 'scale-105 brightness-105' : 'scale-100 brightness-95'
             }`}
           />
-        )}
-
-        {/* Thumbnail fallback when video is not playing or loading */}
-        {project.thumbnail && !isVideoLoaded && !hasVideoError && (
+        ) : hasImage ? (
           <img
-            src={project.thumbnail}
+            src={project.thumbnail || project.poster}
+            alt={project.title}
+            loading="lazy"
+            className={`w-full h-full object-cover transition-all duration-700 ease-out ${
+              isHovered ? 'scale-105 brightness-105' : 'scale-100 brightness-95'
+            }`}
+          />
+        ) : null}
+
+        {/* Thumbnail fallback when video is loading */}
+        {project.video && hasImage && !isVideoLoaded && !hasVideoError && (
+          <img
+            src={project.thumbnail || project.poster}
             alt={project.title}
             loading="lazy"
             onError={() => setHasVideoError(true)}

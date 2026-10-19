@@ -9,6 +9,33 @@ interface CaseStudyModalProps {
   onNextProject: () => void;
 }
 
+function parseProjectRatio(ratioStr?: string): { isPortrait: boolean; isSquare: boolean; cssRatio?: string; numericRatio: number } {
+  if (!ratioStr) return { isPortrait: false, isSquare: false, numericRatio: 16 / 9, cssRatio: '16/9' };
+  
+  const clean = ratioStr.trim();
+  if (clean.includes('/')) {
+    const parts = clean.split('/').map((p) => parseFloat(p.trim()));
+    if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1]) && parts[1] > 0) {
+      const num = parts[0] / parts[1];
+      const isPortrait = parts[1] > parts[0];
+      const isSquare = Math.abs(parts[0] - parts[1]) < 0.05;
+      return { isPortrait, isSquare, cssRatio: clean, numericRatio: num };
+    }
+  }
+  
+  const num = parseFloat(clean);
+  if (!isNaN(num) && num > 0) {
+    return {
+      isPortrait: num < 0.95,
+      isSquare: Math.abs(num - 1) < 0.05,
+      cssRatio: `${num}`,
+      numericRatio: num
+    };
+  }
+  
+  return { isPortrait: false, isSquare: false, cssRatio: '16/9', numericRatio: 16 / 9 };
+}
+
 export const CaseStudyModal: React.FC<CaseStudyModalProps> = ({
   project,
   onClose,
@@ -35,6 +62,10 @@ export const CaseStudyModal: React.FC<CaseStudyModalProps> = ({
   }, [project]);
 
   if (!project) return null;
+
+  const { isPortrait, isSquare, cssRatio } = parseProjectRatio(project.aspectRatio);
+  const hasVideo = Boolean(project.video && project.video.trim() !== '');
+  const stillsList = project.caseStudy?.stills || project.caseStudy?.images || [];
 
   return (
     <div
@@ -83,20 +114,40 @@ export const CaseStudyModal: React.FC<CaseStudyModalProps> = ({
           </p>
         </div>
 
-        {/* Cinematic Hero Media */}
-        <div className={`rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-black/[0.08] mb-16 bg-black ${
-          project.aspectRatio === '9/16' ? 'max-w-[420px] mx-auto' : 'max-w-5xl mx-auto'
-        }`}>
-          <VideoFrame
-            src={project.video}
-            poster={project.poster}
-            aspectRatio={project.aspectRatio}
-            alt={project.title}
-            priority={true}
-            allowSoundToggle={true}
-            hoverScale={false}
-          />
-        </div>
+        {/* Cinematic Hero Media — Respects natural aspect ratio for images & videos */}
+        {hasVideo ? (
+          <div className={`rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-black/[0.08] mb-16 bg-black ${
+            isPortrait ? 'max-w-[440px] sm:max-w-[480px] mx-auto' : isSquare ? 'max-w-[620px] mx-auto' : 'max-w-5xl mx-auto'
+          }`}>
+            <VideoFrame
+              src={project.video}
+              poster={project.poster}
+              aspectRatio={project.aspectRatio}
+              alt={project.title}
+              priority={true}
+              allowSoundToggle={true}
+              hoverScale={false}
+            />
+          </div>
+        ) : (
+          <div className="flex justify-center items-center mb-16">
+            <div
+              className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-black/[0.08] bg-[#EBEAE5] transition-all duration-300 flex items-center justify-center max-w-full"
+              style={{
+                maxWidth: isPortrait ? 'min(580px, 92vw)' : isSquare ? 'min(640px, 92vw)' : 'min(1080px, 92vw)',
+                maxHeight: '82vh'
+              }}
+            >
+              <img
+                src={project.poster}
+                alt={project.title}
+                loading="eager"
+                className="w-full h-auto max-h-[82vh] object-contain rounded-2xl sm:rounded-3xl"
+                style={cssRatio && cssRatio !== 'auto' ? { aspectRatio: cssRatio } : undefined}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Project Metadata Ribbon */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 py-8 border-y border-black/[0.08] mb-24 text-xs font-creato uppercase">
@@ -176,6 +227,30 @@ export const CaseStudyModal: React.FC<CaseStudyModalProps> = ({
             </p>
           </section>
         </div>
+
+        {/* Additional Project Stills & Visual Gallery */}
+        {stillsList.length > 0 && (
+          <section className="mt-24 pt-16 border-t border-black/[0.08] max-w-5xl mx-auto">
+            <span className="text-xs font-creato uppercase tracking-[0.2em] text-[#9A9185] block mb-6">
+              05 / Project Gallery & Stills
+            </span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 items-start">
+              {stillsList.map((stillUrl, sIdx) => (
+                <div
+                  key={sIdx}
+                  className="relative rounded-2xl overflow-hidden shadow-lg border border-black/[0.08] bg-[#ECEBE7] group"
+                >
+                  <img
+                    src={stillUrl}
+                    alt={`${project.title} - Asset ${sIdx + 1}`}
+                    loading="lazy"
+                    className="w-full h-auto max-h-[75vh] object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.02]"
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Next Project Footer Switcher */}
         <div className="mt-32 pt-16 border-t border-black/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-6">

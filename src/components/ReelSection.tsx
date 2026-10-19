@@ -1,15 +1,25 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { showreelData } from '../data/projects';
+import { showreelData, fetchLiveShowreel, type ShowreelConfig } from '../data/projects';
 import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
 
 export const ReelSection: React.FC = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
+  const [reel, setReel] = useState<ShowreelConfig>(showreelData);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+
+  // Load dynamic showreel configuration
+  useEffect(() => {
+    fetchLiveShowreel().then((data) => {
+      if (data) {
+        setReel(data);
+      }
+    });
+  }, []);
 
   // Viewport autoplay observer
   useEffect(() => {
@@ -37,7 +47,7 @@ export const ReelSection: React.FC = () => {
     return () => {
       if (el) observer.unobserve(el);
     };
-  }, [hasError]);
+  }, [hasError, reel.video]);
 
   const togglePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -58,6 +68,11 @@ export const ReelSection: React.FC = () => {
     setIsMuted(!isMuted);
   };
 
+  // If showreel is toggled off from admin panel, hide the section gracefully
+  if (reel.visible === false) {
+    return null;
+  }
+
   return (
     <section
       id="reel"
@@ -68,17 +83,19 @@ export const ReelSection: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-baseline justify-between mb-8 sm:mb-10 pb-5 border-b border-white/10">
           <div>
             <span className="text-xs font-creato uppercase tracking-[0.2em] text-[#86868B] block mb-1.5">
-              02 / SHOWCASE
+              {reel.eyebrow || '02 / SHOWCASE'}
             </span>
             <h2 className="text-2xl sm:text-4xl lg:text-5xl font-creato font-semibold tracking-tight text-white uppercase">
-              SHOWREEL / 2026
+              {reel.title || 'SHOWREEL / 2026'}
             </h2>
           </div>
 
-          <div className="mt-3 sm:mt-0 text-xs sm:text-sm font-creato text-[#86868B] uppercase tracking-wider flex items-center gap-3">
-            <span>Duration · {showreelData.duration}</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          </div>
+          {reel.duration && (
+            <div className="mt-3 sm:mt-0 text-xs sm:text-sm font-creato text-[#86868B] uppercase tracking-wider flex items-center gap-3">
+              <span>Duration · {reel.duration}</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            </div>
+          )}
         </div>
 
         {/* Proportional Video Showcase Container (Balanced size, not oversized) */}
@@ -89,24 +106,29 @@ export const ReelSection: React.FC = () => {
           className="relative w-full aspect-[16/9] bg-[#0E0E10] rounded-2xl overflow-hidden border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.6)] select-none group"
         >
           {/* High-res Cinema Poster */}
-          <img
-            src={showreelData.poster}
-            alt="Samyak Mahajan Showreel"
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700"
-          />
+          {reel.poster && (
+            <img
+              src={reel.poster}
+              alt={reel.title || 'Samyak Mahajan Showreel'}
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700"
+            />
+          )}
 
           {/* HTML5 Video */}
-          <video
-            ref={videoRef}
-            src={showreelData.video}
-            poster={showreelData.poster}
-            muted={isMuted}
-            loop
-            playsInline
-            preload="metadata"
-            onError={() => setHasError(true)}
-            className="absolute inset-0 w-full h-full object-cover"
-          />
+          {reel.video && (
+            <video
+              ref={videoRef}
+              key={reel.video}
+              src={reel.video}
+              poster={reel.poster}
+              muted={isMuted}
+              loop
+              playsInline
+              preload="metadata"
+              onError={() => setHasError(true)}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          )}
 
           {/* Very subtle dark gradient mask */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20 pointer-events-none" />
@@ -148,9 +170,11 @@ export const ReelSection: React.FC = () => {
         </div>
 
         {/* Supporting Caption */}
-        <p className="mt-5 text-xs sm:text-sm text-[#86868B] max-w-xl leading-relaxed font-normal font-creato">
-          {showreelData.description}
-        </p>
+        {reel.description && (
+          <p className="mt-5 text-xs sm:text-sm text-[#86868B] max-w-xl leading-relaxed font-normal font-creato">
+            {reel.description}
+          </p>
+        )}
       </div>
     </section>
   );

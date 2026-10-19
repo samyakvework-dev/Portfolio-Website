@@ -5,7 +5,7 @@ import { Volume2, VolumeX, Maximize2 } from 'lucide-react';
 interface VideoFrameProps {
   src?: string;
   poster: string;
-  aspectRatio?: AspectRatio;
+  aspectRatio?: AspectRatio | string;
   alt?: string;
   className?: string;
   autoPlayInView?: boolean;
@@ -13,6 +13,7 @@ interface VideoFrameProps {
   priority?: boolean;
   onClick?: () => void;
   hoverScale?: boolean;
+  objectFit?: 'cover' | 'contain';
 }
 
 export const VideoFrame: React.FC<VideoFrameProps> = ({
@@ -26,6 +27,7 @@ export const VideoFrame: React.FC<VideoFrameProps> = ({
   priority = false,
   onClick,
   hoverScale = true,
+  objectFit = 'cover',
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -36,8 +38,8 @@ export const VideoFrame: React.FC<VideoFrameProps> = ({
   const [isMuted, setIsMuted] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
 
-  // Aspect ratio class mapping
-  const ratioClasses: Record<AspectRatio, string> = {
+  // Aspect ratio class mapping for standard ratios
+  const ratioClasses: Record<string, string> = {
     '16/9': 'aspect-[16/9]',
     '9/16': 'aspect-[9/16]',
     '4/3': 'aspect-[4/3]',
@@ -107,25 +109,35 @@ export const VideoFrame: React.FC<VideoFrameProps> = ({
     }
   };
 
+  // Parse custom aspect ratio style if not matched by standard ratio classes
+  const customAspectRatioStyle = !ratioClasses[aspectRatio] && aspectRatio && aspectRatio !== 'auto'
+    ? { aspectRatio: aspectRatio.includes('/') ? aspectRatio : aspectRatio }
+    : undefined;
+
+  const fitClass = objectFit === 'contain' ? 'object-contain' : 'object-cover';
+
   return (
     <div
       ref={containerRef}
       onClick={onClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      style={customAspectRatioStyle}
       className={`group relative w-full overflow-hidden bg-[#E5E5EA] transition-all duration-700 ease-out select-none ${
-        ratioClasses[aspectRatio] || 'aspect-[16/9]'
+        ratioClasses[aspectRatio] || ''
       } ${className} ${onClick ? 'cursor-pointer' : ''}`}
     >
       {/* High-resolution Poster Image (always acts as backdrop & graceful fallback) */}
-      <img
-        src={poster}
-        alt={alt}
-        loading={priority ? 'eager' : 'lazy'}
-        className={`absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out ${
-          hoverScale && isHovered ? 'scale-[1.025]' : 'scale-100'
-        } ${isVideoLoaded && !hasVideoError ? 'opacity-0' : 'opacity-100'}`}
-      />
+      {poster && (
+        <img
+          src={poster}
+          alt={alt}
+          loading={priority ? 'eager' : 'lazy'}
+          className={`absolute inset-0 w-full h-full ${fitClass} transition-transform duration-700 ease-out ${
+            hoverScale && isHovered ? 'scale-[1.025]' : 'scale-100'
+          } ${isVideoLoaded && !hasVideoError ? 'opacity-0' : 'opacity-100'}`}
+        />
+      )}
 
       {/* HTML5 Video element */}
       {src && isInView && !hasVideoError && (
@@ -139,7 +151,7 @@ export const VideoFrame: React.FC<VideoFrameProps> = ({
           preload={priority ? 'auto' : 'metadata'}
           onLoadedData={() => setIsVideoLoaded(true)}
           onError={() => setHasVideoError(true)}
-          className={`absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out ${
+          className={`absolute inset-0 w-full h-full ${fitClass} transition-transform duration-700 ease-out ${
             hoverScale && isHovered ? 'scale-[1.025]' : 'scale-100'
           } ${isVideoLoaded ? 'opacity-100' : 'opacity-0'}`}
         />

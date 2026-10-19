@@ -10,7 +10,7 @@
 
 import initialProjects from './projects.json';
 
-export type AspectRatio = '16/9' | '9/16' | '4/3' | '1/1' | '2.39/1';
+export type AspectRatio = '16/9' | '9/16' | '4/3' | '1/1' | '2.39/1' | string;
 export type ProjectCategory = 'Video Editing' | 'Motion Graphics' | 'Graphic Design' | string;
 
 export interface ProjectCaseStudy {
@@ -20,7 +20,10 @@ export interface ProjectCaseStudy {
   motionSystem: string;
   results: string;
   stills?: string[];
+  images?: string[];
   credits?: { role: string; name: string }[];
+  mediaType?: 'video' | 'image' | 'mixed' | string;
+  imageDimensions?: { width: number; height: number };
 }
 
 export interface Project {
@@ -32,16 +35,30 @@ export interface Project {
   year: string;
   client: string;
   description: string;
-  video?: string;          // Path in /public or URL
-  poster: string;          // Path in /public or URL
-  thumbnail?: string;      // Compatibility alias
+  mediaType?: 'video' | 'image' | 'mixed' | string;
+  video?: string;          // Optional for image-only projects
+  poster: string;          // Main Artwork / Poster
+  thumbnail?: string;      // Dedicated Grid Thumbnail
   aspectRatio: AspectRatio;
+  imageWidth?: number;
+  imageHeight?: number;
   featured?: boolean;
   order?: number;
   published?: boolean;
   status?: string;
   tags: string[];
   caseStudy: ProjectCaseStudy;
+}
+
+export interface ShowreelConfig {
+  title: string;
+  eyebrow?: string;
+  duration: string;
+  description: string;
+  video: string;
+  poster: string;
+  visible: boolean;
+  aspectRatio?: string;
 }
 
 export const CATEGORIES: { id: string; label: string; ratio?: string }[] = [
@@ -54,15 +71,38 @@ export const CATEGORIES: { id: string; label: string; ratio?: string }[] = [
 // Initial projects from the persistent database
 export const projects: Project[] = initialProjects as Project[];
 
-export const showreelData = {
-  title: "SHOWREEL",
-  year: "2026",
+export const showreelData: ShowreelConfig = {
+  title: "SHOWREEL / 2026",
+  eyebrow: "02 / SHOWCASE",
   duration: "01:24",
   description: "A curated edit of commercial direction, dynamic motion graphics, kinetic typography, and post-production finishing.",
   video: "/reel/showreel.mp4",
   poster: "/reel/showreel-poster.jpg",
-  aspectRatio: "16/9" as AspectRatio
+  visible: true,
+  aspectRatio: "16/9"
 };
+
+/**
+ * Fetch dynamic showreel configuration from the backend API.
+ * Falls back gracefully to static bundled defaults.
+ */
+export async function fetchLiveShowreel(): Promise<ShowreelConfig> {
+  try {
+    const res = await fetch('/api/showreel');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.showreel) {
+        return {
+          ...showreelData,
+          ...data.showreel
+        };
+      }
+    }
+  } catch (err) {
+    console.debug('[Showreel] Using static fallback showreel:', err);
+  }
+  return showreelData;
+}
 
 /**
  * Fetch live projects from the persistent backend API.

@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getProjects, createProject, updateProject, deleteProject, reorderProjects } from './_lib/store.js';
+import { getProjects, createProject, updateProject, deleteProject, reorderProjects, getShowreel, saveShowreel } from './_lib/store.js';
 import { extractToken, verifySessionToken } from './_lib/auth.js';
 import { parseRequestBody, sendResponse } from './_lib/apiHandler.js';
 
@@ -20,6 +20,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const urlObj = new URL(req.url || '/', 'http://localhost');
     const query = Object.fromEntries(urlObj.searchParams.entries());
+
+    // ------------------------------------------------------------------------
+    // Showreel configuration shortcut
+    // ------------------------------------------------------------------------
+    if (query.showreel === 'true') {
+      if (req.method === 'GET') {
+        const showreel = await getShowreel();
+        return sendResponse(res, 200, { success: true, showreel });
+      }
+      if (!isAdmin) {
+        return sendResponse(res, 401, { success: false, error: 'Unauthorized. Admin login required.' });
+      }
+      const body = await parseRequestBody(req);
+      const updated = await saveShowreel(body);
+      return sendResponse(res, 200, { success: true, showreel: updated });
+    }
 
     // ------------------------------------------------------------------------
     // GET: Retrieve projects

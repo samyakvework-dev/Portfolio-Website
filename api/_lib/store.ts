@@ -1,6 +1,28 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+export interface ShowreelConfig {
+  title: string;
+  eyebrow?: string;
+  duration: string;
+  description: string;
+  video: string;
+  poster: string;
+  visible: boolean;
+  aspectRatio?: string;
+}
+
+export const defaultShowreel: ShowreelConfig = {
+  title: "SHOWREEL / 2026",
+  eyebrow: "02 / SHOWCASE",
+  duration: "01:24",
+  description: "A curated edit of commercial direction, dynamic motion graphics, kinetic typography, and post-production finishing.",
+  video: "/reel/showreel.mp4",
+  poster: "/reel/showreel-poster.jpg",
+  visible: true,
+  aspectRatio: "16/9"
+};
+
 export interface ProjectData {
   id: string;
   slug: string;
@@ -26,6 +48,8 @@ export interface ProjectData {
     results: string;
     stills?: string[];
     credits?: { role: string; name: string }[];
+    mediaType?: string;
+    imageDimensions?: { width: number; height: number };
   };
 }
 
@@ -35,6 +59,14 @@ function getDbPaths(): string[] {
   return [
     path.join(cwd, 'data', 'projects.json'),
     path.join(cwd, 'src', 'data', 'projects.json')
+  ];
+}
+
+function getShowreelPaths(): string[] {
+  const cwd = process.cwd();
+  return [
+    path.join(cwd, 'data', 'showreel.json'),
+    path.join(cwd, 'src', 'data', 'showreel.json')
   ];
 }
 
@@ -189,11 +221,13 @@ export async function getProjects(includeDrafts = false): Promise<ProjectData[]>
   if (sb) {
     try {
       const query = includeDrafts
-        ? 'projects?select=*&order=%22order%22.asc'
-        : 'projects?select=*&published=eq.true&order=%22order%22.asc';
+        ? 'projects?select=*&id=neq.__showreel_config__&order=%22order%22.asc'
+        : 'projects?select=*&id=neq.__showreel_config__&published=eq.true&order=%22order%22.asc';
       const remote = await fetchFromSupabase(query);
       if (Array.isArray(remote) && remote.length > 0) {
-        return remote.map(fromDbRecord);
+        return remote
+          .filter((r: any) => r.id !== '__showreel_config__')
+          .map(fromDbRecord);
       }
     } catch (e) {
       console.warn('[Store] Supabase fetch failed, falling back to local database:', e);
@@ -208,7 +242,9 @@ export async function getProjects(includeDrafts = false): Promise<ProjectData[]>
         const raw = fs.readFileSync(filePath, 'utf8');
         const list: ProjectData[] = JSON.parse(raw);
         if (Array.isArray(list)) {
-          let sorted = list.sort((a, b) => (a.order || 999) - (b.order || 999));
+          let sorted = list
+            .filter((p) => p.id !== '__showreel_config__')
+            .sort((a, b) => (a.order || 999) - (b.order || 999));
           if (!includeDrafts) {
             sorted = sorted.filter((p) => p.published !== false);
           }
@@ -227,7 +263,8 @@ export async function getProjects(includeDrafts = false): Promise<ProjectData[]>
  * Save projects list to persistent local files and Supabase
  */
 export async function saveProjects(projects: ProjectData[]): Promise<boolean> {
-  const normalized = projects.map((p, idx) => ({
+  const cleanProjects = projects.filter((p) => p.id !== '__showreel_config__');
+  const normalized = cleanProjects.map((p, idx) => ({
     ...p,
     order: p.order !== undefined ? p.order : idx + 1,
     published: p.published !== undefined ? p.published : true
@@ -382,6 +419,8 @@ export async function updateProject(id: string, updates: Partial<ProjectData>): 
  * Delete a project
  */
 export async function deleteProject(id: string): Promise<boolean> {
+  if (id === '__showreel_config__') return false;
+
   const sb = getSupabaseConfig();
   if (sb) {
     await fetchFromSupabase(`projects?id=eq.${encodeURIComponent(id)}`, {
@@ -400,10 +439,11 @@ export async function deleteProject(id: string): Promise<boolean> {
  */
 export async function reorderProjects(orderedIds: string[]): Promise<ProjectData[]> {
   const current = await getProjects(true);
-  const projectMap = new Map(current.map((p) => [p.id, p]));
+  const cleanOrderedIds = orderedIds.filter((id) => id !== '__showreel_config__');
+  const projectMap = new Map(current.filter((p) => p.id !== '__showreel_config__').map((p) => [p.id, p]));
 
   const reordered: ProjectData[] = [];
-  orderedIds.forEach((id, idx) => {
+  cleanOrderedIds.forEach((id, idx) => {
     const p = projectMap.get(id);
     if (p) {
       p.order = idx + 1;
@@ -429,4 +469,115 @@ export async function reorderProjects(orderedIds: string[]): Promise<ProjectData
 
   saveLocalProjects(reordered);
   return reordered;
+}
+
+/**
+ * Fetch dynamic showreel configuration from Supabase or local file
+ */
+export async function getShowreel(): Promise<ShowreelConfig> {
+  const sb = getSupabaseConfig();
+  if (sb) {
+    try {
+      const records = await fetchFromSupabase('projects?id=eq.__showreel_config__');
+      if (Array.isArray(records) && records.length > 0) {
+        const r = records[0];
+        const caseStudy = typeof r.case_study === 'string'
+          ? JSON.parse(r.case_study)
+          : (r.case_study || {});
+        return {
+          title: r.title || defaultShowreel.title,
+          eyebrow: r.sub_category || caseStudy.eyebrow || defaultShowreel.eyebrow,
+          duration: r.year || caseStudy.duration || defaultShowreel.duration,
+          description: r.description || defaultShowreel.description,
+          video: r.video || defaultShowreel.video,
+          poster: r.poster || defaultShowreel.poster,
+          visible: r.published !== false,
+          aspectRatio: r.aspect_ratio || defaultShowreel.aspectRatio
+        };
+      }
+    } catch (e) {
+      console.warn('[Store] Supabase showreel fetch failed, reading from local fallback:', e);
+    }
+  }
+
+  const paths = getShowreelPaths();
+  for (const filePath of paths) {
+    try {
+      if (fs.existsSync(filePath)) {
+        const raw = fs.readFileSync(filePath, 'utf8');
+        return { ...defaultShowreel, ...JSON.parse(raw) };
+      }
+    } catch (err) {
+      console.error(`[Store] Error reading showreel from ${filePath}:`, err);
+    }
+  }
+
+  return defaultShowreel;
+}
+
+/**
+ * Save dynamic showreel configuration to Supabase and local file
+ */
+export async function saveShowreel(updates: Partial<ShowreelConfig>): Promise<ShowreelConfig> {
+  const current = await getShowreel();
+  const merged: ShowreelConfig = {
+    title: (updates.title ?? current.title ?? defaultShowreel.title).trim(),
+    eyebrow: (updates.eyebrow ?? current.eyebrow ?? defaultShowreel.eyebrow ?? '02 / SHOWCASE').trim(),
+    duration: (updates.duration ?? current.duration ?? defaultShowreel.duration).trim(),
+    description: (updates.description ?? current.description ?? defaultShowreel.description).trim(),
+    video: (updates.video ?? current.video ?? '').trim(),
+    poster: (updates.poster ?? current.poster ?? defaultShowreel.poster).trim(),
+    visible: updates.visible !== undefined ? updates.visible : current.visible,
+    aspectRatio: updates.aspectRatio || current.aspectRatio || '16/9'
+  };
+
+  // 1. Sync to Supabase if configured
+  const sb = getSupabaseConfig();
+  if (sb) {
+    const dbRecord = {
+      id: '__showreel_config__',
+      slug: 'showreel-config',
+      title: merged.title,
+      category: 'Showreel',
+      sub_category: merged.eyebrow || '02 / SHOWCASE',
+      year: merged.duration || '01:24',
+      client: 'Showcase',
+      description: merged.description,
+      video: merged.video,
+      poster: merged.poster || defaultShowreel.poster,
+      thumbnail: merged.poster || defaultShowreel.poster,
+      aspect_ratio: merged.aspectRatio || '16/9',
+      published: merged.visible !== false,
+      featured: false,
+      order: 0,
+      tags: ['Showreel'],
+      case_study: {
+        eyebrow: merged.eyebrow,
+        duration: merged.duration,
+        visible: merged.visible,
+        aspectRatio: merged.aspectRatio
+      },
+      updated_at: new Date().toISOString()
+    };
+
+    await fetchFromSupabase('projects?on_conflict=id', {
+      method: 'POST',
+      headers: { 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify(dbRecord)
+    });
+  }
+
+  // 2. Safe local file write
+  const paths = getShowreelPaths();
+  for (const filePath of paths) {
+    try {
+      const dir = path.dirname(filePath);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(filePath, JSON.stringify(merged, null, 2), 'utf8');
+    } catch {
+      // Ignore in read-only serverless environment
+    }
+  }
+
+  return merged;
 }

@@ -67,13 +67,14 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
     );
   }
 
-  // Mixed 'All' view: group landscape and vertical sections cleanly with Apple-style headers
-  const landscapeProjects = filteredProjects.filter(p => p.aspectRatio === '16/9');
+  // Mixed 'All' view: group landscape, vertical, and artwork sections cleanly
+  const landscapeProjects = filteredProjects.filter(p => p.aspectRatio === '16/9' || p.aspectRatio === '2.39/1');
   const verticalProjects = filteredProjects.filter(p => p.aspectRatio === '9/16');
+  const artworkProjects = filteredProjects.filter(p => !landscapeProjects.includes(p) && !verticalProjects.includes(p));
 
   return (
     <div className="space-y-16 w-full">
-      {/* Landscape Section (Motion Graphics & Colour Grading) */}
+      {/* Landscape Section (Motion Graphics & Commercials) */}
       {landscapeProjects.length > 0 && (
         <section aria-labelledby="landscape-showcase">
           <div className="flex items-baseline justify-between mb-6 pb-2 border-b border-white/6">
@@ -103,7 +104,7 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
         </section>
       )}
 
-      {/* Vertical Section (Talking Head & Testimonials) */}
+      {/* Vertical Section (Talking Head & Vertical Reels) */}
       {verticalProjects.length > 0 && (
         <section aria-labelledby="vertical-showcase">
           <div className="flex items-baseline justify-between mb-6 pb-2 border-b border-white/6">
@@ -112,7 +113,7 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
                 Vertical Format (9:16)
               </span>
               <h3 id="vertical-showcase" className="text-xl sm:text-2xl font-bold tracking-tight text-white mt-1">
-                Talking Head & Testimonials
+                Talking Head & Retention Reels
               </h3>
             </div>
             <span className="text-xs font-mono text-white/40">
@@ -126,6 +127,36 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
                 key={project.id}
                 project={project}
                 projectNumber={landscapeProjects.length + idx + 1}
+                onSelectProject={onSelectProject}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Artwork & Key Art Section (Graphic Design, Posters & Exhibition Prints) */}
+      {artworkProjects.length > 0 && (
+        <section aria-labelledby="artwork-showcase">
+          <div className="flex items-baseline justify-between mb-6 pb-2 border-b border-white/6">
+            <div>
+              <span className="text-[11px] font-mono uppercase tracking-widest text-[#FF6A00]">
+                Key Visuals & Poster Art
+              </span>
+              <h3 id="artwork-showcase" className="text-xl sm:text-2xl font-bold tracking-tight text-white mt-1">
+                Graphic Design & Typography
+              </h3>
+            </div>
+            <span className="text-xs font-mono text-white/40">
+              {artworkProjects.length} Projects
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            {artworkProjects.map((project, idx) => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                projectNumber={landscapeProjects.length + verticalProjects.length + idx + 1}
                 onSelectProject={onSelectProject}
               />
             ))}

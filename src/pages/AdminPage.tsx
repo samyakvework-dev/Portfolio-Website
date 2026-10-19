@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { Project, AspectRatio, ProjectCategory } from '../data/projects';
+import type { Project, AspectRatio, ProjectCategory, ShowreelConfig } from '../data/projects';
+import { showreelData } from '../data/projects';
 import {
   Lock,
   LogOut,
@@ -18,7 +19,14 @@ import {
   RefreshCw,
   Search,
   ExternalLink,
-  HelpCircle
+  HelpCircle,
+  Film,
+  Image as ImageIcon,
+  Layers,
+  Play,
+  Save,
+  Clock,
+  LayoutGrid
 } from 'lucide-react';
 
 export const AdminPage: React.FC = () => {
@@ -29,6 +37,9 @@ export const AdminPage: React.FC = () => {
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
+  // Main Section Navigation: Projects Archive vs Showreel Showcase
+  const [mainSection, setMainSection] = useState<'projects' | 'showreel'>('projects');
+
   // Projects & library states
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -36,11 +47,17 @@ export const AdminPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [toastMsg, setToastMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
+  // Showreel Showcase states
+  const [showreel, setShowreel] = useState<ShowreelConfig>(showreelData);
+  const [isSavingShowreel, setIsSavingShowreel] = useState(false);
+  const [isLoadingShowreel, setIsLoadingShowreel] = useState(false);
+
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Partial<Project> | null>(null);
+  const [projectMediaType, setProjectMediaType] = useState<'video' | 'image' | 'mixed'>('video');
 
   // Upload progress state
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
@@ -52,12 +69,44 @@ export const AdminPage: React.FC = () => {
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
 
+  // Input refs for file uploads
   const videoFileInputRef = useRef<HTMLInputElement | null>(null);
   const posterFileInputRef = useRef<HTMLInputElement | null>(null);
+  const thumbnailFileInputRef = useRef<HTMLInputElement | null>(null);
+  const stillFileInputRef = useRef<HTMLInputElement | null>(null);
+  const showreelVideoInputRef = useRef<HTMLInputElement | null>(null);
+  const showreelPosterInputRef = useRef<HTMLInputElement | null>(null);
 
   const showToast = (text: string, type: 'success' | 'error' = 'success') => {
     setToastMsg({ text, type });
     setTimeout(() => setToastMsg(null), 3500);
+  };
+
+  // Inspect and validate image dimensions (1x1 to 4000x4000 pixels)
+  const inspectImageFile = (file: File): Promise<{ width: number; height: number; naturalRatio: string }> => {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const width = img.naturalWidth;
+        const height = img.naturalHeight;
+        if (width < 1 || height < 1) {
+          reject(new Error('Invalid image dimensions.'));
+          return;
+        }
+        if (width > 4000 || height > 4000) {
+          reject(new Error(`Image dimensions (${width} × ${height}px) exceed the 4000 × 4000px maximum limit. Please upload an image within 4000 × 4000px.`));
+          return;
+        }
+        resolve({ width, height, naturalRatio: `${width}/${height}` });
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('Failed to load image file. Supported formats: JPG, PNG, WebP, AVIF, GIF.'));
+      };
+      img.src = url;
+    });
   };
 
   // Check auth session
@@ -97,9 +146,26 @@ export const AdminPage: React.FC = () => {
     }
   };
 
+  // Load Showreel settings
+  const loadShowreel = async () => {
+    setIsLoadingShowreel(true);
+    try {
+      const res = await fetch('/api/showreel');
+      const data = await res.json();
+      if (data.success && data.showreel) {
+        setShowreel(data.showreel);
+      }
+    } catch (err) {
+      console.error('[Admin] Error loading showreel:', err);
+    } finally {
+      setIsLoadingShowreel(false);
+    }
+  };
+
   useEffect(() => {
     if (token) {
       loadProjects();
+      loadShowreel();
     }
   }, [token]);
 
@@ -124,7 +190,7 @@ export const AdminPage: React.FC = () => {
       } else {
         setLoginError(data.error || 'Invalid administrator email or password.');
       }
-    } catch (err: any) {
+    } catch {
       setLoginError('Could not connect to authentication API.');
     } finally {
       setIsLoggingIn(false);
@@ -137,11 +203,50 @@ export const AdminPage: React.FC = () => {
     setProjects([]);
   };
 
-  // Handle Create / Edit Project
+  // Save Main Showreel Changes (TASK 1)
+  const handleSaveShowreel = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!showreel.title.trim()) {
+      showToast('Showreel title is required.', 'error');
+      return;
+    }
+
+    setIsSavingShowreel(true);
+    try {
+      const res = await fetch('/api/showreel', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(showreel)
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('Showreel configuration updated successfully!');
+        if (data.showreel) setShowreel(data.showreel);
+      } else {
+        showToast(data.error || 'Failed to update showreel.', 'error');
+      }
+    } catch {
+      showToast('Network error saving showreel.', 'error');
+    } finally {
+      setIsSavingShowreel(false);
+    }
+  };
+
+  // Handle Create / Edit Project (TASK 2)
   const handleSaveProject = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingProject?.title) {
+    if (!editingProject?.title?.trim()) {
       showToast('Project title is required.', 'error');
+      return;
+    }
+
+    // Video is optional for image-only projects
+    const isImageOnly = projectMediaType === 'image';
+    if (!isImageOnly && !editingProject.video && !editingProject.poster && !editingProject.thumbnail) {
+      showToast('Please provide either a video or an image poster for this project.', 'error');
       return;
     }
 
@@ -150,13 +255,21 @@ export const AdminPage: React.FC = () => {
       const url = isEditing ? `/api/projects?id=${editingProject.id}` : '/api/projects';
       const method = isEditing ? 'PUT' : 'POST';
 
+      const payload = {
+        ...editingProject,
+        mediaType: projectMediaType,
+        video: isImageOnly ? '' : (editingProject.video || ''),
+        poster: editingProject.poster || editingProject.thumbnail || '/projects/project-01/poster.jpg',
+        thumbnail: editingProject.thumbnail || editingProject.poster || '/projects/project-01/poster.jpg'
+      };
+
       const res = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify(editingProject)
+        body: JSON.stringify(payload)
       });
 
       const data = await res.json();
@@ -262,15 +375,37 @@ export const AdminPage: React.FC = () => {
     }
   };
 
-  // Handle File Upload (Video or Poster)
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, targetField: 'video' | 'poster') => {
+  // Universal Media Uploader (Video, Poster, Thumbnail, Still Gallery, Showreel Video, Showreel Poster)
+  const handleFileUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    targetField: 'video' | 'poster' | 'thumbnail' | 'still' | 'showreel-video' | 'showreel-poster'
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Supabase Storage free tier max file upload limit is 50 MB
+    const isImage = targetField === 'poster' || targetField === 'thumbnail' || targetField === 'still' || targetField === 'showreel-poster';
+
+    // 1. Validate image dimensions if uploading an image (TASK 2B: 1x1 to 4000x4000 pixels)
+    let naturalRatio = '';
+    let imageWidth = 0;
+    let imageHeight = 0;
+    if (isImage) {
+      try {
+        const dimensions = await inspectImageFile(file);
+        imageWidth = dimensions.width;
+        imageHeight = dimensions.height;
+        naturalRatio = dimensions.naturalRatio;
+      } catch (validationErr: any) {
+        showToast(validationErr.message || 'Image validation failed.', 'error');
+        e.target.value = '';
+        return;
+      }
+    }
+
+    // 2. File size validation (50 MB limit for Supabase storage)
     if (file.size > 50 * 1024 * 1024) {
       showToast(
-        `File size (${(file.size / (1024 * 1024)).toFixed(1)} MB) exceeds the 50 MB limit. Please compress the video or enter an external Video URL.`,
+        `File size (${(file.size / (1024 * 1024)).toFixed(1)} MB) exceeds the 50 MB limit. Please compress the file or enter an external URL.`,
         'error'
       );
       e.target.value = '';
@@ -278,10 +413,10 @@ export const AdminPage: React.FC = () => {
     }
 
     setIsUploadingMedia(true);
-    setUploadProgressText(`Requesting upload authorization for ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)...`);
+    setUploadProgressText(`Authorizing upload for ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)...`);
 
     try {
-      // 1. Request short-lived signed upload URL from backend (keeps service-role key secure on server)
+      // 1. Request short-lived signed upload URL from backend
       const signRes = await fetch('/api/upload', {
         method: 'POST',
         headers: {
@@ -296,8 +431,8 @@ export const AdminPage: React.FC = () => {
       });
 
       const signData = await signRes.json();
+      let publicAssetUrl = '';
 
-      // If signed URL provided, upload directly from browser to Supabase Storage (bypasses Vercel 4.5 MB limit)
       if (signRes.ok && signData.success && signData.signedUrl) {
         setUploadProgressText(`Uploading ${file.name}... 0%`);
 
@@ -326,20 +461,13 @@ export const AdminPage: React.FC = () => {
           xhr.send(file);
         });
 
-        // ONLY attach storage URL after upload strictly succeeds:
-        setEditingProject((prev) => ({
-          ...prev,
-          [targetField]: signData.publicUrl,
-          ...(targetField === 'poster' ? { thumbnail: signData.publicUrl } : {})
-        }));
-
-        showToast(`${targetField === 'video' ? 'Video' : 'Thumbnail'} uploaded successfully to Supabase.`);
+        publicAssetUrl = signData.publicUrl;
       } else {
-        // If Supabase is not configured on this environment, fall back to Base64 only if small (< 4 MB)
+        // Fallback for smaller files if direct storage signing is unavailable
         if (file.size < 4 * 1024 * 1024) {
-          setUploadProgressText(`Processing local upload for ${file.name}...`);
+          setUploadProgressText(`Processing upload for ${file.name}...`);
           const reader = new FileReader();
-          await new Promise<void>((resolve, reject) => {
+          publicAssetUrl = await new Promise<string>((resolve, reject) => {
             reader.onload = async () => {
               try {
                 const dataUrl = reader.result as string;
@@ -357,13 +485,7 @@ export const AdminPage: React.FC = () => {
                 });
                 const fallbackData = await fallbackRes.json();
                 if (fallbackRes.ok && fallbackData.success && fallbackData.url) {
-                  setEditingProject((prev) => ({
-                    ...prev,
-                    [targetField]: fallbackData.url,
-                    ...(targetField === 'poster' ? { thumbnail: fallbackData.url } : {})
-                  }));
-                  showToast(`${targetField === 'video' ? 'Video' : 'Thumbnail'} uploaded.`);
-                  resolve();
+                  resolve(fallbackData.url);
                 } else {
                   reject(new Error(fallbackData.error || 'Server upload failed.'));
                 }
@@ -378,15 +500,89 @@ export const AdminPage: React.FC = () => {
           throw new Error(signData.error || 'Direct Supabase upload required for files larger than 4 MB.');
         }
       }
+
+      // Attach public URL safely based on targetField
+      if (targetField === 'video') {
+        setEditingProject((prev) => ({
+          ...prev,
+          video: publicAssetUrl
+        }));
+        showToast('Project video uploaded successfully.');
+      } else if (targetField === 'poster') {
+        setEditingProject((prev) => ({
+          ...prev,
+          poster: publicAssetUrl,
+          thumbnail: prev?.thumbnail || publicAssetUrl,
+          imageWidth,
+          imageHeight,
+          aspectRatio: naturalRatio || prev?.aspectRatio || '16/9'
+        }));
+        showToast(`Poster artwork uploaded (${imageWidth} × ${imageHeight}px). Natural ratio set.`);
+      } else if (targetField === 'thumbnail') {
+        setEditingProject((prev) => ({
+          ...prev,
+          thumbnail: publicAssetUrl
+        }));
+        showToast('Dedicated grid thumbnail updated.');
+      } else if (targetField === 'still') {
+        setEditingProject((prev) => {
+          const currentStills = prev?.caseStudy?.stills || [];
+          return {
+            ...prev,
+            caseStudy: {
+              ...(prev?.caseStudy || {
+                role: ['Creative'],
+                challenge: '',
+                concept: '',
+                motionSystem: '',
+                results: ''
+              }),
+              stills: [...currentStills, publicAssetUrl]
+            }
+          };
+        });
+        showToast('Gallery image added to project.');
+      } else if (targetField === 'showreel-video') {
+        setShowreel((prev) => ({
+          ...prev,
+          video: publicAssetUrl
+        }));
+        showToast('Showreel video uploaded successfully.');
+      } else if (targetField === 'showreel-poster') {
+        setShowreel((prev) => ({
+          ...prev,
+          poster: publicAssetUrl
+        }));
+        showToast('Showreel poster image uploaded.');
+      }
     } catch (err: any) {
       console.error('[Upload Failed]', err);
       showToast(err.message || 'Error uploading file.', 'error');
     } finally {
-      // ALWAYS clear loading indicator state regardless of success or failure
       setIsUploadingMedia(false);
       setUploadProgressText('');
       e.target.value = '';
     }
+  };
+
+  // Remove gallery still image
+  const handleRemoveStill = (indexToRemove: number) => {
+    setEditingProject((prev) => {
+      const currentStills = prev?.caseStudy?.stills || [];
+      return {
+        ...prev,
+        caseStudy: {
+          ...(prev?.caseStudy || {
+            role: ['Creative'],
+            challenge: '',
+            concept: '',
+            motionSystem: '',
+            results: ''
+          }),
+          stills: currentStills.filter((_, idx) => idx !== indexToRemove)
+        }
+      };
+    });
   };
 
   // Handle Password Change
@@ -430,6 +626,7 @@ export const AdminPage: React.FC = () => {
 
   // Open modal for new project
   const handleAddNew = () => {
+    setProjectMediaType('video');
     setEditingProject({
       title: '',
       category: 'Video Editing',
@@ -439,6 +636,7 @@ export const AdminPage: React.FC = () => {
       description: '',
       video: '',
       poster: '/projects/project-01/poster.jpg',
+      thumbnail: '',
       aspectRatio: '16/9',
       featured: false,
       published: true,
@@ -449,6 +647,7 @@ export const AdminPage: React.FC = () => {
         concept: '',
         motionSystem: '',
         results: '',
+        stills: [],
         credits: [{ role: 'Editor', name: 'Samyak Mahajan' }]
       }
     });
@@ -457,6 +656,8 @@ export const AdminPage: React.FC = () => {
 
   // Open modal for editing
   const handleEdit = (p: Project) => {
+    const isImage = !p.video && Boolean(p.poster);
+    setProjectMediaType(isImage ? 'image' : 'video');
     setEditingProject({ ...p });
     setIsModalOpen(true);
   };
@@ -493,7 +694,6 @@ export const AdminPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#F5F4F0] flex items-center justify-center p-6 font-creato">
         <div className="w-full max-w-md p-8 sm:p-10 rounded-3xl bg-[#ECEBE7] border border-black/[0.08] shadow-[0_20px_50px_rgba(0,0,0,0.06)]">
-          {/* Monogram */}
           <div className="w-12 h-12 rounded-2xl bg-[#171717] text-white flex items-center justify-center mb-6 shadow-sm">
             <Lock className="w-6 h-6" />
           </div>
@@ -505,7 +705,7 @@ export const AdminPage: React.FC = () => {
             Sign In to CMS
           </h1>
           <p className="mt-2 text-xs sm:text-sm text-[#686764] leading-relaxed">
-            Manage your video showcases, upload media, adjust categories, and publish projects without touching code.
+            Manage your video showcases, edit your homepage Showreel, upload graphic design artworks, and publish projects without touching code.
           </p>
 
           {loginError && (
@@ -547,7 +747,7 @@ export const AdminPage: React.FC = () => {
             <button
               type="submit"
               disabled={isLoggingIn}
-              className="w-full py-3.5 rounded-xl bg-[#171717] text-white hover:bg-black font-creato font-medium text-xs uppercase tracking-[0.16em] flex items-center justify-center gap-2 transition-all disabled:opacity-50 mt-2"
+              className="w-full py-3.5 rounded-xl bg-[#171717] text-white hover:bg-black font-creato font-medium text-xs uppercase tracking-[0.16em] flex items-center justify-center gap-2 transition-all disabled:opacity-50 mt-2 cursor-pointer"
             >
               {isLoggingIn ? 'Authenticating...' : 'Sign In to Dashboard'}
             </button>
@@ -591,12 +791,15 @@ export const AdminPage: React.FC = () => {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={loadProjects}
-              disabled={isLoading}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-black/[0.08] text-xs text-[#171717] hover:bg-black/5 transition-colors disabled:opacity-50"
-              title="Refresh project data"
+              onClick={() => {
+                loadProjects();
+                loadShowreel();
+              }}
+              disabled={isLoading || isLoadingShowreel}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-black/[0.08] text-xs text-[#171717] hover:bg-black/5 transition-colors disabled:opacity-50 cursor-pointer"
+              title="Refresh project & showreel data"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${isLoading || isLoadingShowreel ? 'animate-spin' : ''}`} />
               <span>Refresh</span>
             </button>
 
@@ -613,7 +816,7 @@ export const AdminPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsPasswordModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-black/[0.08] text-xs text-[#171717] hover:bg-black/5 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-black/[0.08] text-xs text-[#171717] hover:bg-black/5 transition-colors cursor-pointer"
             >
               <Key className="w-3.5 h-3.5" />
               <span>Change Password</span>
@@ -622,7 +825,7 @@ export const AdminPage: React.FC = () => {
             <button
               type="button"
               onClick={handleLogout}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#171717] text-white hover:bg-black text-xs transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#171717] text-white hover:bg-black text-xs transition-colors cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Log Out</span>
@@ -632,290 +835,646 @@ export const AdminPage: React.FC = () => {
       </div>
 
       <div className="max-w-[1500px] mx-auto px-6 sm:px-10 lg:px-16 pt-8">
-        {/* KPI Summary Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-10">
-          <div className="p-5 sm:p-6 rounded-2xl bg-[#ECEBE7] border border-black/[0.06] shadow-sm">
-            <span className="text-[11px] font-creato uppercase tracking-wider text-[#9A9185] block mb-1">
-              Total Projects
-            </span>
-            <span className="text-3xl sm:text-4xl font-semibold text-[#171717] block">
-              {totalCount}
-            </span>
-            <span className="text-xs text-[#686764] mt-1 block">In local & cloud archive</span>
-          </div>
+        {/* Main Section Navigation Switcher (Projects Library vs Showreel Showcase) */}
+        <div className="flex items-center gap-3 mb-8">
+          <button
+            type="button"
+            onClick={() => setMainSection('projects')}
+            className={`flex items-center gap-2.5 px-5 py-3 rounded-2xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
+              mainSection === 'projects'
+                ? 'bg-[#171717] text-white shadow-sm ring-1 ring-black'
+                : 'bg-[#ECEBE7] text-[#686764] hover:text-[#171717] hover:bg-black/5 border border-black/[0.06]'
+            }`}
+          >
+            <LayoutGrid className="w-4 h-4" />
+            <span>Projects Archive ({projects.length})</span>
+          </button>
 
-          <div className="p-5 sm:p-6 rounded-2xl bg-[#ECEBE7] border border-black/[0.06] shadow-sm">
-            <span className="text-[11px] font-creato uppercase tracking-wider text-[#9A9185] block mb-1">
-              Published Live
-            </span>
-            <span className="text-3xl sm:text-4xl font-semibold text-emerald-700 block">
-              {publishedCount}
-            </span>
-            <span className="text-xs text-[#686764] mt-1 block">Visible to portfolio visitors</span>
-          </div>
-
-          <div className="p-5 sm:p-6 rounded-2xl bg-[#ECEBE7] border border-black/[0.06] shadow-sm">
-            <span className="text-[11px] font-creato uppercase tracking-wider text-[#9A9185] block mb-1">
-              Private Drafts
-            </span>
-            <span className="text-3xl sm:text-4xl font-semibold text-amber-700 block">
-              {draftsCount}
-            </span>
-            <span className="text-xs text-[#686764] mt-1 block">Hidden from public view</span>
-          </div>
-
-          <div className="p-5 sm:p-6 rounded-2xl bg-[#ECEBE7] border border-black/[0.06] shadow-sm">
-            <span className="text-[11px] font-creato uppercase tracking-wider text-[#9A9185] block mb-1">
-              Featured on Home
-            </span>
-            <span className="text-3xl sm:text-4xl font-semibold text-[#171717] block">
-              {featuredCount}
-            </span>
-            <span className="text-xs text-[#686764] mt-1 block">Preserves 3 flagship showcases</span>
-          </div>
+          <button
+            type="button"
+            onClick={() => setMainSection('showreel')}
+            className={`flex items-center gap-2.5 px-5 py-3 rounded-2xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
+              mainSection === 'showreel'
+                ? 'bg-[#171717] text-white shadow-sm ring-1 ring-black'
+                : 'bg-[#ECEBE7] text-[#686764] hover:text-[#171717] hover:bg-black/5 border border-black/[0.06]'
+            }`}
+          >
+            <Film className="w-4 h-4" />
+            <span>Main Showreel Manager ({showreel.title})</span>
+            {showreel.visible === false && (
+              <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/20 text-amber-800">
+                Hidden
+              </span>
+            )}
+          </button>
         </div>
 
-        {/* Action & Filter Strip */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-6 border-b border-black/[0.08]">
-          {/* Category Tabs */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => setActiveTab('all')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium uppercase tracking-wider transition-colors ${
-                activeTab === 'all' ? 'bg-[#171717] text-white' : 'bg-[#ECEBE7] text-[#686764] hover:text-[#171717]'
-              }`}
-            >
-              All ({projects.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('video')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium uppercase tracking-wider transition-colors ${
-                activeTab === 'video' ? 'bg-[#171717] text-white' : 'bg-[#ECEBE7] text-[#686764] hover:text-[#171717]'
-              }`}
-            >
-              Video Editing
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('motion')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium uppercase tracking-wider transition-colors ${
-                activeTab === 'motion' ? 'bg-[#171717] text-white' : 'bg-[#ECEBE7] text-[#686764] hover:text-[#171717]'
-              }`}
-            >
-              Motion Graphics
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('graphic')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium uppercase tracking-wider transition-colors ${
-                activeTab === 'graphic' ? 'bg-[#171717] text-white' : 'bg-[#ECEBE7] text-[#686764] hover:text-[#171717]'
-              }`}
-            >
-              Graphic Design
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('featured')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium uppercase tracking-wider transition-colors ${
-                activeTab === 'featured' ? 'bg-[#171717] text-white' : 'bg-[#ECEBE7] text-[#686764] hover:text-[#171717]'
-              }`}
-            >
-              ★ Featured ({featuredCount})
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('drafts')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium uppercase tracking-wider transition-colors ${
-                activeTab === 'drafts' ? 'bg-[#171717] text-white' : 'bg-[#ECEBE7] text-[#686764] hover:text-[#171717]'
-              }`}
-            >
-              Drafts ({draftsCount})
-            </button>
-          </div>
+        {/* ==================================================================== */}
+        {/* VIEW 1: PROJECTS ARCHIVE & LIBRARY                                  */}
+        {/* ==================================================================== */}
+        {mainSection === 'projects' && (
+          <>
+            {/* KPI Summary Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-10">
+              <div className="p-5 sm:p-6 rounded-2xl bg-[#ECEBE7] border border-black/[0.06] shadow-sm">
+                <span className="text-[11px] font-creato uppercase tracking-wider text-[#9A9185] block mb-1">
+                  Total Projects
+                </span>
+                <span className="text-3xl sm:text-4xl font-semibold text-[#171717] block">
+                  {totalCount}
+                </span>
+                <span className="text-xs text-[#686764] mt-1 block">In local & cloud archive</span>
+              </div>
 
-          {/* Search & Add New Project */}
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-[#9A9185]" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search projects..."
-                className="pl-8 pr-3 py-1.5 rounded-lg bg-white border border-black/[0.08] text-xs text-[#171717] focus:outline-none focus:border-black/40 w-48 sm:w-56"
-              />
+              <div className="p-5 sm:p-6 rounded-2xl bg-[#ECEBE7] border border-black/[0.06] shadow-sm">
+                <span className="text-[11px] font-creato uppercase tracking-wider text-[#9A9185] block mb-1">
+                  Published Live
+                </span>
+                <span className="text-3xl sm:text-4xl font-semibold text-emerald-700 block">
+                  {publishedCount}
+                </span>
+                <span className="text-xs text-[#686764] mt-1 block">Visible to portfolio visitors</span>
+              </div>
+
+              <div className="p-5 sm:p-6 rounded-2xl bg-[#ECEBE7] border border-black/[0.06] shadow-sm">
+                <span className="text-[11px] font-creato uppercase tracking-wider text-[#9A9185] block mb-1">
+                  Private Drafts
+                </span>
+                <span className="text-3xl sm:text-4xl font-semibold text-amber-700 block">
+                  {draftsCount}
+                </span>
+                <span className="text-xs text-[#686764] mt-1 block">Hidden from public view</span>
+              </div>
+
+              <div className="p-5 sm:p-6 rounded-2xl bg-[#ECEBE7] border border-black/[0.06] shadow-sm">
+                <span className="text-[11px] font-creato uppercase tracking-wider text-[#9A9185] block mb-1">
+                  Featured on Home
+                </span>
+                <span className="text-3xl sm:text-4xl font-semibold text-[#171717] block">
+                  {featuredCount}
+                </span>
+                <span className="text-xs text-[#686764] mt-1 block">Preserves 3 flagship showcases</span>
+              </div>
             </div>
 
-            <button
-              type="button"
-              onClick={handleAddNew}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#171717] text-white hover:bg-black text-xs font-semibold uppercase tracking-wider transition-colors shrink-0 shadow-sm"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add New Project</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Project Library Table / List */}
-        <div className="rounded-2xl bg-[#ECEBE7] border border-black/[0.08] overflow-hidden shadow-sm">
-          <div className="divide-y divide-black/[0.06]">
-            {filteredProjects.length === 0 ? (
-              <div className="py-16 text-center text-xs text-[#686764]">
-                No projects found. Click "Add New Project" above to create one.
-              </div>
-            ) : (
-              filteredProjects.map((p, idx) => (
-                <div
-                  key={p.id}
-                  className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#E6E5E0] transition-colors"
+            {/* Action & Filter Strip */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-6 border-b border-black/[0.08]">
+              {/* Category Tabs */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('all')}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-medium uppercase tracking-wider transition-colors cursor-pointer ${
+                    activeTab === 'all' ? 'bg-[#171717] text-white' : 'bg-[#ECEBE7] text-[#686764] hover:text-[#171717]'
+                  }`}
                 >
-                  {/* Left: Thumbnail & Main Info */}
-                  <div className="flex items-start sm:items-center gap-4">
-                    {/* Thumbnail Preview */}
-                    <div className="w-20 h-14 rounded-lg overflow-hidden bg-black/10 shrink-0 border border-black/[0.08]">
-                      <img
-                        src={p.poster || p.thumbnail || '/projects/project-01/poster.jpg'}
-                        alt={p.title}
-                        className="w-full h-full object-cover"
+                  All ({projects.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('video')}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-medium uppercase tracking-wider transition-colors cursor-pointer ${
+                    activeTab === 'video' ? 'bg-[#171717] text-white' : 'bg-[#ECEBE7] text-[#686764] hover:text-[#171717]'
+                  }`}
+                >
+                  Video Editing
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('motion')}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-medium uppercase tracking-wider transition-colors cursor-pointer ${
+                    activeTab === 'motion' ? 'bg-[#171717] text-white' : 'bg-[#ECEBE7] text-[#686764] hover:text-[#171717]'
+                  }`}
+                >
+                  Motion Graphics
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('graphic')}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-medium uppercase tracking-wider transition-colors cursor-pointer ${
+                    activeTab === 'graphic' ? 'bg-[#171717] text-white' : 'bg-[#ECEBE7] text-[#686764] hover:text-[#171717]'
+                  }`}
+                >
+                  Graphic Design
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('featured')}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-medium uppercase tracking-wider transition-colors cursor-pointer ${
+                    activeTab === 'featured' ? 'bg-[#171717] text-white' : 'bg-[#ECEBE7] text-[#686764] hover:text-[#171717]'
+                  }`}
+                >
+                  ★ Featured ({featuredCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('drafts')}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-medium uppercase tracking-wider transition-colors cursor-pointer ${
+                    activeTab === 'drafts' ? 'bg-[#171717] text-white' : 'bg-[#ECEBE7] text-[#686764] hover:text-[#171717]'
+                  }`}
+                >
+                  Drafts ({draftsCount})
+                </button>
+              </div>
+
+              {/* Search & Add New Project */}
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-[#9A9185]" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search projects..."
+                    className="pl-8 pr-3 py-1.5 rounded-lg bg-white border border-black/[0.08] text-xs text-[#171717] focus:outline-none focus:border-black/40 w-48 sm:w-56"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAddNew}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#171717] text-white hover:bg-black text-xs font-semibold uppercase tracking-wider transition-colors shrink-0 shadow-sm cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add New Project</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Project Library Table / List */}
+            <div className="rounded-2xl bg-[#ECEBE7] border border-black/[0.08] overflow-hidden shadow-sm">
+              <div className="divide-y divide-black/[0.06]">
+                {filteredProjects.length === 0 ? (
+                  <div className="py-16 text-center text-xs text-[#686764]">
+                    No projects found. Click "Add New Project" above to create one.
+                  </div>
+                ) : (
+                  filteredProjects.map((p, idx) => (
+                    <div
+                      key={p.id}
+                      className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#E6E5E0] transition-colors"
+                    >
+                      {/* Left: Thumbnail & Main Info */}
+                      <div className="flex items-start sm:items-center gap-4">
+                        {/* Thumbnail Preview */}
+                        <div className="w-20 h-14 rounded-lg overflow-hidden bg-black/10 shrink-0 border border-black/[0.08]">
+                          <img
+                            src={p.thumbnail || p.poster || '/projects/project-01/poster.jpg'}
+                            alt={p.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <span className="text-sm font-semibold text-[#171717]">{p.title}</span>
+                            {p.featured && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#171717] text-white text-[10px] font-medium">
+                                <Star className="w-2.5 h-2.5 fill-current" />
+                                <span>Featured #{idx + 1}</span>
+                              </span>
+                            )}
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                                p.published !== false
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : 'bg-amber-100 text-amber-800'
+                              }`}
+                            >
+                              {p.published !== false ? 'Published' : 'Draft'}
+                            </span>
+                            {!p.video && (
+                              <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-medium flex items-center gap-1">
+                                <ImageIcon className="w-2.5 h-2.5" />
+                                <span>Image Artwork</span>
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-3 text-xs text-[#686764]">
+                            <span className="font-medium text-[#171717]">{p.client || 'Commission'}</span>
+                            <span>·</span>
+                            <span>{p.category}</span>
+                            <span>·</span>
+                            <span className="px-1.5 py-0.5 bg-black/[0.04] rounded text-[11px] font-mono">
+                              {p.aspectRatio}
+                            </span>
+                            <span>·</span>
+                            <span>{p.year}</span>
+                            {p.caseStudy?.stills && p.caseStudy.stills.length > 0 && (
+                              <>
+                                <span>·</span>
+                                <span className="text-emerald-700 font-medium">
+                                  +{p.caseStudy.stills.length} stills
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right: Actions */}
+                      <div className="flex items-center gap-1.5 self-end sm:self-center">
+                        {/* Reorder Buttons */}
+                        <button
+                          type="button"
+                          onClick={() => handleMoveOrder(idx, 'up')}
+                          disabled={idx === 0}
+                          title="Move Up in order"
+                          className="p-1.5 rounded-lg bg-white border border-black/[0.06] text-[#686764] hover:text-[#171717] hover:bg-black/5 disabled:opacity-30 cursor-pointer"
+                        >
+                          <ArrowUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleMoveOrder(idx, 'down')}
+                          disabled={idx === projects.length - 1}
+                          title="Move Down in order"
+                          className="p-1.5 rounded-lg bg-white border border-black/[0.06] text-[#686764] hover:text-[#171717] hover:bg-black/5 disabled:opacity-30 cursor-pointer"
+                        >
+                          <ArrowDown className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Toggle Featured */}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleFeatured(p)}
+                          title={p.featured ? 'Remove from Homepage Featured' : 'Feature on Homepage (Top 3)'}
+                          className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                            p.featured
+                              ? 'bg-amber-100 border-amber-300 text-amber-800'
+                              : 'bg-white border-black/[0.06] text-[#686764] hover:text-amber-600'
+                          }`}
+                        >
+                          <Star className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Toggle Published */}
+                        <button
+                          type="button"
+                          onClick={() => handleTogglePublished(p)}
+                          title={p.published !== false ? 'Unpublish to Draft' : 'Publish Live'}
+                          className="p-1.5 rounded-lg bg-white border border-black/[0.06] text-[#686764] hover:text-[#171717] hover:bg-black/5 cursor-pointer"
+                        >
+                          {p.published !== false ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                        </button>
+
+                        {/* Edit Project */}
+                        <button
+                          type="button"
+                          onClick={() => handleEdit(p)}
+                          title="Edit project details"
+                          className="p-1.5 rounded-lg bg-white border border-black/[0.06] text-[#686764] hover:text-[#171717] hover:bg-black/5 cursor-pointer"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Delete Project */}
+                        <button
+                          type="button"
+                          onClick={() => setIsDeletingId(p.id)}
+                          title="Delete project"
+                          className="p-1.5 rounded-lg bg-white border border-black/[0.06] text-red-600 hover:bg-red-50 hover:border-red-200 cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Beginner-Friendly Instructions Card */}
+            <div className="mt-12 p-6 sm:p-8 rounded-3xl bg-[#ECEBE7] border border-black/[0.08] shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <HelpCircle className="w-5 h-5 text-[#171717]" />
+                <h3 className="text-base font-semibold text-[#171717]">
+                  Beginner-Friendly Portfolio Guide
+                </h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-[#686764] leading-relaxed">
+                <div>
+                  <span className="font-semibold text-[#171717] block mb-1">1. Video & Image Projects:</span>
+                  You can now create both <strong>Video Projects</strong> and standalone <strong>Image Artworks / Posters</strong> (like Travis Scott Liquid Typography). Images are displayed in their natural portrait or landscape proportions without distortion.
+                </div>
+                <div>
+                  <span className="font-semibold text-[#171717] block mb-1">2. Main Showreel Manager:</span>
+                  Switch to the <strong>"Main Showreel Manager"</strong> tab above to edit your homepage Showreel title (e.g. <em>SHOWREEL / 2026</em>), upload a new video file, or update description and poster.
+                </div>
+                <div>
+                  <span className="font-semibold text-[#171717] block mb-1">3. Direct Cloud Persistence:</span>
+                  All updates save directly to Supabase and show immediately on your live website without touching code, editing SQL, or waiting for code redeployments!
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ==================================================================== */}
+        {/* VIEW 2: DEDICATED SHOWREEL MANAGEMENT (TASK 1)                      */}
+        {/* ==================================================================== */}
+        {mainSection === 'showreel' && (
+          <div className="space-y-8">
+            <div className="p-6 sm:p-8 rounded-3xl bg-[#ECEBE7] border border-black/[0.08] shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-black/[0.08] gap-4 mb-8">
+                <div>
+                  <span className="text-[11px] font-creato uppercase tracking-[0.2em] text-[#9A9185] block mb-1">
+                    HOMEPAGE FLAGSHIP SHOWCASE
+                  </span>
+                  <h2 className="text-2xl sm:text-3xl font-semibold text-[#171717]">
+                    Main Showreel Management
+                  </h2>
+                  <p className="mt-1 text-xs sm:text-sm text-[#686764]">
+                    Customize the showreel title card, video file, duration, and poster displayed on the homepage.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleSaveShowreel}
+                  disabled={isSavingShowreel || isUploadingMedia}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#171717] text-white hover:bg-black text-xs font-semibold uppercase tracking-wider transition-all disabled:opacity-50 shrink-0 shadow-sm cursor-pointer"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{isSavingShowreel ? 'Saving Showreel...' : 'Save Showreel Changes'}</span>
+                </button>
+              </div>
+
+              {/* Form & Live Preview Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                {/* Left: Form Controls (7 cols) */}
+                <form onSubmit={handleSaveShowreel} className="lg:col-span-7 space-y-5">
+                  {/* Title & Eyebrow */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-creato uppercase tracking-wider text-[#686764] mb-1.5 font-medium">
+                        Showreel Title Card *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={showreel.title}
+                        onChange={(e) => setShowreel({ ...showreel, title: e.target.value })}
+                        placeholder="e.g. SHOWREEL / 2026"
+                        className="w-full px-4 py-2.5 rounded-xl bg-white border border-black/[0.08] text-sm text-[#171717] focus:outline-none focus:border-black/40"
                       />
+                      <span className="text-[10px] text-[#9A9185] mt-1 block">
+                        Changes the prominent heading on the live homepage.
+                      </span>
                     </div>
 
                     <div>
-                      <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <span className="text-sm font-semibold text-[#171717]">{p.title}</span>
-                        {p.featured && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#171717] text-white text-[10px] font-medium">
-                            <Star className="w-2.5 h-2.5 fill-current" />
-                            <span>Featured #{idx + 1}</span>
-                          </span>
-                        )}
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                            p.published !== false
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : 'bg-amber-100 text-amber-800'
-                          }`}
-                        >
-                          {p.published !== false ? 'Published' : 'Draft'}
-                        </span>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-[#686764]">
-                        <span className="font-medium text-[#171717]">{p.client || 'Commission'}</span>
-                        <span>·</span>
-                        <span>{p.category}</span>
-                        <span>·</span>
-                        <span className="px-1.5 py-0.5 bg-black/[0.04] rounded text-[11px] font-mono">
-                          {p.aspectRatio}
-                        </span>
-                        <span>·</span>
-                        <span>{p.year}</span>
-                      </div>
+                      <label className="block text-[11px] font-creato uppercase tracking-wider text-[#686764] mb-1.5 font-medium">
+                        Eyebrow Label
+                      </label>
+                      <input
+                        type="text"
+                        value={showreel.eyebrow || '02 / SHOWCASE'}
+                        onChange={(e) => setShowreel({ ...showreel, eyebrow: e.target.value })}
+                        placeholder="e.g. 02 / SHOWCASE"
+                        className="w-full px-4 py-2.5 rounded-xl bg-white border border-black/[0.08] text-sm text-[#171717] focus:outline-none focus:border-black/40"
+                      />
+                      <span className="text-[10px] text-[#9A9185] mt-1 block">
+                        Section counter label above the title.
+                      </span>
                     </div>
                   </div>
 
-                  {/* Right: Actions */}
-                  <div className="flex items-center gap-1.5 self-end sm:self-center">
-                    {/* Reorder Buttons */}
-                    <button
-                      type="button"
-                      onClick={() => handleMoveOrder(idx, 'up')}
-                      disabled={idx === 0}
-                      title="Move Up in order"
-                      className="p-1.5 rounded-lg bg-white border border-black/[0.06] text-[#686764] hover:text-[#171717] hover:bg-black/5 disabled:opacity-30"
-                    >
-                      <ArrowUp className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleMoveOrder(idx, 'down')}
-                      disabled={idx === projects.length - 1}
-                      title="Move Down in order"
-                      className="p-1.5 rounded-lg bg-white border border-black/[0.06] text-[#686764] hover:text-[#171717] hover:bg-black/5 disabled:opacity-30"
-                    >
-                      <ArrowDown className="w-3.5 h-3.5" />
-                    </button>
+                  {/* Duration & Visibility Toggle */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-creato uppercase tracking-wider text-[#686764] mb-1.5 font-medium">
+                        Video Duration Display
+                      </label>
+                      <div className="relative">
+                        <Clock className="w-3.5 h-3.5 absolute left-3.5 top-3 text-[#9A9185]" />
+                        <input
+                          type="text"
+                          value={showreel.duration}
+                          onChange={(e) => setShowreel({ ...showreel, duration: e.target.value })}
+                          placeholder="01:24"
+                          className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-white border border-black/[0.08] text-sm text-[#171717] focus:outline-none"
+                        />
+                      </div>
+                    </div>
 
-                    {/* Toggle Featured */}
-                    <button
-                      type="button"
-                      onClick={() => handleToggleFeatured(p)}
-                      title={p.featured ? 'Remove from Homepage Featured' : 'Feature on Homepage (Top 3)'}
-                      className={`p-1.5 rounded-lg border transition-colors ${
-                        p.featured
-                          ? 'bg-amber-100 border-amber-300 text-amber-800'
-                          : 'bg-white border-black/[0.06] text-[#686764] hover:text-amber-600'
-                      }`}
-                    >
-                      <Star className="w-3.5 h-3.5" />
-                    </button>
+                    <div>
+                      <label className="block text-[11px] font-creato uppercase tracking-wider text-[#686764] mb-1.5 font-medium">
+                        Visibility Status
+                      </label>
+                      <label className="flex items-center gap-3 p-2.5 rounded-xl bg-white border border-black/[0.08] cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={showreel.visible !== false}
+                          onChange={(e) => setShowreel({ ...showreel, visible: e.target.checked })}
+                          className="w-4 h-4 rounded text-black focus:ring-0 cursor-pointer"
+                        />
+                        <span className="text-xs font-medium text-[#171717]">
+                          {showreel.visible !== false ? 'Visible on Homepage' : 'Hidden from Public Website'}
+                        </span>
+                      </label>
+                    </div>
+                  </div>
 
-                    {/* Toggle Published */}
-                    <button
-                      type="button"
-                      onClick={() => handleTogglePublished(p)}
-                      title={p.published !== false ? 'Unpublish to Draft' : 'Publish Live'}
-                      className="p-1.5 rounded-lg bg-white border border-black/[0.06] text-[#686764] hover:text-[#171717] hover:bg-black/5"
-                    >
-                      {p.published !== false ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                    </button>
+                  {/* Short Description */}
+                  <div>
+                    <label className="block text-[11px] font-creato uppercase tracking-wider text-[#686764] mb-1.5 font-medium">
+                      Description (Under Video)
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={showreel.description}
+                      onChange={(e) => setShowreel({ ...showreel, description: e.target.value })}
+                      placeholder="A curated edit of commercial direction, dynamic motion graphics..."
+                      className="w-full px-4 py-2.5 rounded-xl bg-white border border-black/[0.08] text-xs text-[#171717] focus:outline-none resize-none leading-relaxed"
+                    />
+                  </div>
 
-                    {/* Edit Project */}
-                    <button
-                      type="button"
-                      onClick={() => handleEdit(p)}
-                      title="Edit project details"
-                      className="p-1.5 rounded-lg bg-white border border-black/[0.06] text-[#686764] hover:text-[#171717] hover:bg-black/5"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
+                  {/* Showreel Video Upload & URL */}
+                  <div className="p-5 rounded-2xl bg-white border border-black/[0.08] space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-[#171717] flex items-center gap-2">
+                        <Film className="w-4 h-4 text-emerald-600" />
+                        <span>Showreel Video File</span>
+                      </span>
+                      {showreel.video && (
+                        <button
+                          type="button"
+                          onClick={() => setShowreel({ ...showreel, video: '' })}
+                          className="text-[11px] text-red-600 hover:underline"
+                        >
+                          Clear Video
+                        </button>
+                      )}
+                    </div>
 
-                    {/* Delete Project */}
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <input
+                        type="text"
+                        value={showreel.video}
+                        onChange={(e) => setShowreel({ ...showreel, video: e.target.value })}
+                        placeholder="Video URL (e.g. /reel/showreel.mp4 or Supabase URL)"
+                        className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#F5F4F0] border border-black/[0.08] text-xs text-[#171717] focus:outline-none font-mono"
+                      />
+                      <input
+                        ref={showreelVideoInputRef}
+                        type="file"
+                        accept="video/mp4,video/webm,video/quicktime"
+                        className="hidden"
+                        onChange={(e) => handleFileUpload(e, 'showreel-video')}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => showreelVideoInputRef.current?.click()}
+                        disabled={isUploadingMedia}
+                        className="px-4 py-2.5 rounded-xl bg-[#171717] text-white hover:bg-black text-xs font-medium flex items-center justify-center gap-2 shrink-0 cursor-pointer disabled:opacity-50"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Upload Video</span>
+                      </button>
+                    </div>
+
+                    <div className="text-[11px] text-[#9A9185]">
+                      Supported formats: MP4, WebM, QuickTime. Files up to 50 MB upload directly to Supabase Storage.
+                    </div>
+                  </div>
+
+                  {/* Showreel Poster Upload & URL */}
+                  <div className="p-5 rounded-2xl bg-white border border-black/[0.08] space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-[#171717] flex items-center gap-2">
+                        <ImageIcon className="w-4 h-4 text-blue-600" />
+                        <span>Showreel Poster / Thumbnail Image</span>
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <input
+                        type="text"
+                        value={showreel.poster}
+                        onChange={(e) => setShowreel({ ...showreel, poster: e.target.value })}
+                        placeholder="Poster image URL (e.g. /reel/showreel-poster.jpg)"
+                        className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#F5F4F0] border border-black/[0.08] text-xs text-[#171717] focus:outline-none font-mono"
+                      />
+                      <input
+                        ref={showreelPosterInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/avif"
+                        className="hidden"
+                        onChange={(e) => handleFileUpload(e, 'showreel-poster')}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => showreelPosterInputRef.current?.click()}
+                        disabled={isUploadingMedia}
+                        className="px-4 py-2.5 rounded-xl bg-[#171717] text-white hover:bg-black text-xs font-medium flex items-center justify-center gap-2 shrink-0 cursor-pointer disabled:opacity-50"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Upload Poster</span>
+                      </button>
+                    </div>
+
+                    <div className="text-[11px] text-[#9A9185]">
+                      Supports JPG, PNG, WebP, AVIF up to 4000 × 4000 pixels.
+                    </div>
+                  </div>
+
+                  {uploadProgressText && isUploadingMedia && (
+                    <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 animate-pulse flex items-center gap-2">
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>{uploadProgressText}</span>
+                    </div>
+                  )}
+
+                  <div className="pt-4 flex items-center justify-end">
                     <button
-                      type="button"
-                      onClick={() => setIsDeletingId(p.id)}
-                      title="Delete project"
-                      className="p-1.5 rounded-lg bg-white border border-black/[0.06] text-red-600 hover:bg-red-50 hover:border-red-200"
+                      type="submit"
+                      disabled={isSavingShowreel || isUploadingMedia}
+                      className="px-8 py-3 rounded-xl bg-[#171717] text-white hover:bg-black text-xs font-semibold uppercase tracking-wider transition-all disabled:opacity-50 shadow-sm flex items-center gap-2 cursor-pointer"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Save className="w-4 h-4" />
+                      <span>{isSavingShowreel ? 'Saving Changes...' : 'Save Showreel Changes'}</span>
                     </button>
                   </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+                </form>
 
-        {/* Beginner-Friendly Instructions Card */}
-        <div className="mt-12 p-6 sm:p-8 rounded-3xl bg-[#ECEBE7] border border-black/[0.08] shadow-sm">
-          <div className="flex items-center gap-3 mb-4">
-            <HelpCircle className="w-5 h-5 text-[#171717]" />
-            <h3 className="text-base font-semibold text-[#171717]">
-              Beginner-Friendly Workflow Guide
-            </h3>
+                {/* Right: Interactive Dark Live Preview (5 cols, matches public design) */}
+                <div className="lg:col-span-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-creato uppercase tracking-wider text-[#9A9185] font-semibold">
+                      Live Frontend Preview
+                    </span>
+                    <span
+                      className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                        showreel.visible !== false
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : 'bg-amber-100 text-amber-800'
+                      }`}
+                    >
+                      {showreel.visible !== false ? 'Live on Site' : 'Currently Hidden'}
+                    </span>
+                  </div>
+
+                  {/* Dark Mockup Card mirroring public ReelSection.tsx */}
+                  <div className="p-6 rounded-3xl bg-[#0D0D0D] text-white border border-white/10 shadow-xl space-y-4">
+                    <div>
+                      <span className="text-[10px] font-creato uppercase tracking-[0.2em] text-[#9A9185] block mb-1">
+                        {showreel.eyebrow || '02 / SHOWCASE'}
+                      </span>
+                      <h3 className="text-xl font-creato font-semibold text-white tracking-tight">
+                        {showreel.title || 'SHOWREEL / 2026'}
+                      </h3>
+                    </div>
+
+                    <div className="w-full h-px bg-white/10" />
+
+                    {/* Video Player Preview */}
+                    <div className="relative aspect-video rounded-2xl overflow-hidden bg-black/60 border border-white/10 flex items-center justify-center">
+                      {showreel.video ? (
+                        <video
+                          src={showreel.video}
+                          poster={showreel.poster}
+                          controls
+                          playsInline
+                          preload="metadata"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : showreel.poster ? (
+                        <img
+                          src={showreel.poster}
+                          alt="Showreel Preview"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="text-center text-xs text-white/40 flex flex-col items-center gap-2">
+                          <Play className="w-6 h-6 text-white/30" />
+                          <span>No video uploaded yet</span>
+                        </div>
+                      )}
+
+                      {/* Duration Tag overlay */}
+                      {showreel.duration && (
+                        <div className="absolute bottom-3 right-3 px-2 py-0.5 rounded bg-black/70 backdrop-blur-md text-[10px] font-mono text-white/90 border border-white/10 pointer-events-none">
+                          {showreel.duration}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Description preview */}
+                    <p className="text-xs text-white/60 font-creato leading-relaxed">
+                      {showreel.description || 'A curated edit of commercial direction, dynamic motion graphics, kinetic typography, and post-production finishing.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-[#686764] leading-relaxed">
-            <div>
-              <span className="font-semibold text-[#171717] block mb-1">1. Adding a New Video Project:</span>
-              Click <strong>"Add New Project"</strong> above. Enter the title, select your discipline (Video Editing, Motion Graphics, Graphic Design), choose the aspect ratio (16:9 for landscape, 9:16 for vertical), and click <strong>"Upload Video"</strong> or enter a video URL.
-            </div>
-            <div>
-              <span className="font-semibold text-[#171717] block mb-1">2. Homepage Featured Showcases:</span>
-              The top 3 featured showcases on your homepage are controlled by the <strong>★ Star</strong> button. The first 3 projects marked with the Star appear on your Homepage in their exact order.
-            </div>
-            <div>
-              <span className="font-semibold text-[#171717] block mb-1">3. Instant Publishing:</span>
-              Toggle between <strong>Published</strong> (live on the website) and <strong>Draft</strong> (private) anytime. Changes save persistently and appear immediately without writing code or redeploying!
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* ---------------------------------------------------------------------- */}
-      {/* MODAL: ADD / EDIT PROJECT                                              */}
+      {/* MODAL: ADD / EDIT PROJECT (TASK 2)                                     */}
       {/* ---------------------------------------------------------------------- */}
       {isModalOpen && editingProject && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
@@ -932,17 +1491,69 @@ export const AdminPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#171717] hover:bg-black/5"
+                className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#171717] hover:bg-black/5 cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
             <form onSubmit={handleSaveProject} className="space-y-5">
+              {/* Media Type Selector (Video Project vs Standalone Image Artwork) */}
+              <div className="p-4 rounded-2xl bg-white border border-black/[0.08]">
+                <label className="block text-[11px] font-creato uppercase tracking-wider text-[#686764] mb-2 font-medium">
+                  Project Asset Type *
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setProjectMediaType('video')}
+                    className={`py-2 px-3 rounded-xl text-xs font-medium flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                      projectMediaType === 'video'
+                        ? 'bg-[#171717] text-white border-black shadow-sm'
+                        : 'bg-[#F5F4F0] text-[#686764] border-black/[0.06] hover:text-[#171717]'
+                    }`}
+                  >
+                    <Film className="w-3.5 h-3.5" />
+                    <span>Video Project</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProjectMediaType('image');
+                      if (editingProject.aspectRatio === '16/9') {
+                        setEditingProject({ ...editingProject, aspectRatio: '4/3' });
+                      }
+                    }}
+                    className={`py-2 px-3 rounded-xl text-xs font-medium flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                      projectMediaType === 'image'
+                        ? 'bg-[#171717] text-white border-black shadow-sm'
+                        : 'bg-[#F5F4F0] text-[#686764] border-black/[0.06] hover:text-[#171717]'
+                    }`}
+                  >
+                    <ImageIcon className="w-3.5 h-3.5" />
+                    <span>Image Artwork</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setProjectMediaType('mixed')}
+                    className={`py-2 px-3 rounded-xl text-xs font-medium flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                      projectMediaType === 'mixed'
+                        ? 'bg-[#171717] text-white border-black shadow-sm'
+                        : 'bg-[#F5F4F0] text-[#686764] border-black/[0.06] hover:text-[#171717]'
+                    }`}
+                  >
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>Mixed Media</span>
+                  </button>
+                </div>
+              </div>
+
               {/* Title & Client */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] font-creato uppercase tracking-wider text-[#686764] mb-1">
+                  <label className="block text-[11px] font-creato uppercase tracking-wider text-[#686764] mb-1 font-medium">
                     Project Title *
                   </label>
                   <input
@@ -950,28 +1561,28 @@ export const AdminPage: React.FC = () => {
                     required
                     value={editingProject.title || ''}
                     onChange={(e) => setEditingProject({ ...editingProject, title: e.target.value })}
-                    placeholder="e.g. Nike — Kinetic Energy Campaign"
+                    placeholder="e.g. Travis Scott — Liquid Typography"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-black/[0.08] text-xs text-[#171717] focus:outline-none focus:border-black/40"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-creato uppercase tracking-wider text-[#686764] mb-1">
-                    Client / Brand
+                  <label className="block text-[11px] font-creato uppercase tracking-wider text-[#686764] mb-1 font-medium">
+                    Client / Spec
                   </label>
                   <input
                     type="text"
                     value={editingProject.client || ''}
                     onChange={(e) => setEditingProject({ ...editingProject, client: e.target.value })}
-                    placeholder="e.g. Nike Running"
+                    placeholder="e.g. Editorial Artwork, Tour Spec"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-black/[0.08] text-xs text-[#171717] focus:outline-none focus:border-black/40"
                   />
                 </div>
               </div>
 
-              {/* Category & Aspect Ratio */}
+              {/* Discipline, Sub-Category & Aspect Ratio */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-[11px] font-creato uppercase tracking-wider text-[#686764] mb-1">
+                  <label className="block text-[11px] font-creato uppercase tracking-wider text-[#686764] mb-1 font-medium">
                     Discipline *
                   </label>
                   <select
@@ -984,116 +1595,260 @@ export const AdminPage: React.FC = () => {
                     <option value="Graphic Design">Graphic Design</option>
                   </select>
                 </div>
+
                 <div>
-                  <label className="block text-[11px] font-creato uppercase tracking-wider text-[#686764] mb-1">
+                  <label className="block text-[11px] font-creato uppercase tracking-wider text-[#686764] mb-1 font-medium">
                     Sub-Category
                   </label>
                   <input
                     type="text"
                     value={editingProject.subCategory || ''}
                     onChange={(e) => setEditingProject({ ...editingProject, subCategory: e.target.value })}
-                    placeholder="e.g. Commercial, Kinetic Type"
+                    placeholder="e.g. Poster Design, Commercial"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-black/[0.08] text-xs text-[#171717] focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-creato uppercase tracking-wider text-[#686764] mb-1">
-                    Aspect Ratio *
-                  </label>
-                  <select
-                    value={editingProject.aspectRatio || '16/9'}
-                    onChange={(e) => setEditingProject({ ...editingProject, aspectRatio: e.target.value as AspectRatio })}
-                    className="w-full px-3 py-2.5 rounded-xl bg-white border border-black/[0.08] text-xs text-[#171717] focus:outline-none"
                   >
-                    <option value="16/9">16:9 (Landscape Video)</option>
-                    <option value="9/16">9:16 (Vertical Mobile Reel)</option>
-                    <option value="4/3">4:3 (Artwork / Classic)</option>
-                    <option value="1/1">1:1 (Square)</option>
-                    <option value="2.39/1">2.39:1 (Cinemascope)</option>
-                  </select>
+                  </input>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-creato uppercase tracking-wider text-[#686764] mb-1 font-medium">
+                    Display Aspect Ratio *
+                  </label>
+                  <div className="flex gap-1.5">
+                    <input
+                      type="text"
+                      value={editingProject.aspectRatio || '16/9'}
+                      onChange={(e) => setEditingProject({ ...editingProject, aspectRatio: e.target.value as AspectRatio })}
+                      placeholder="16/9 or 794/1123"
+                      className="w-full px-3 py-2.5 rounded-xl bg-white border border-black/[0.08] text-xs font-mono text-[#171717] focus:outline-none"
+                    />
+                    <select
+                      value={['16/9', '9/16', '4/3', '1/1', '2.39/1'].includes(editingProject.aspectRatio || '') ? editingProject.aspectRatio : 'custom'}
+                      onChange={(e) => {
+                        if (e.target.value !== 'custom') {
+                          setEditingProject({ ...editingProject, aspectRatio: e.target.value as AspectRatio });
+                        }
+                      }}
+                      className="px-2 py-2.5 rounded-xl bg-white border border-black/[0.08] text-xs text-[#171717]"
+                    >
+                      <option value="16/9">16:9</option>
+                      <option value="9/16">9:16</option>
+                      <option value="4/3">4:3</option>
+                      <option value="1/1">1:1</option>
+                      <option value="2.39/1">2.39:1</option>
+                      <option value="custom">Custom</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
               {/* Description */}
               <div>
-                <label className="block text-[11px] font-creato uppercase tracking-wider text-[#686764] mb-1">
+                <label className="block text-[11px] font-creato uppercase tracking-wider text-[#686764] mb-1 font-medium">
                   Card Description (Short & punchy)
                 </label>
                 <textarea
                   rows={2}
                   value={editingProject.description || ''}
                   onChange={(e) => setEditingProject({ ...editingProject, description: e.target.value })}
-                  placeholder="High-velocity editorial pacing and sound-reactive typographics..."
+                  placeholder="Cinematic typography poster exploring liquid metal reflections..."
                   className="w-full px-3.5 py-2 rounded-xl bg-white border border-black/[0.08] text-xs text-[#171717] focus:outline-none resize-none"
                 />
               </div>
 
-              {/* Media: Video File or URL */}
-              <div className="p-4 rounded-2xl bg-white border border-black/[0.08] space-y-3">
-                <span className="text-[11px] font-creato uppercase tracking-wider font-semibold text-[#171717] block">
-                  Video Media Source
-                </span>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <input
-                    type="text"
-                    value={editingProject.video || ''}
-                    onChange={(e) => setEditingProject({ ...editingProject, video: e.target.value })}
-                    placeholder="Enter Video URL (e.g. /projects/project-02/video.mp4 or https://...)"
-                    className="flex-1 px-3.5 py-2 rounded-xl bg-[#F5F4F0] border border-black/[0.08] text-xs text-[#171717] focus:outline-none"
-                  />
-                  <input
-                    ref={videoFileInputRef}
-                    type="file"
-                    accept="video/mp4,video/webm,video/quicktime"
-                    className="hidden"
-                    onChange={(e) => handleFileUpload(e, 'video')}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => videoFileInputRef.current?.click()}
-                    className="px-4 py-2 rounded-xl bg-[#171717] text-white hover:bg-black text-xs font-medium flex items-center justify-center gap-1.5 shrink-0"
-                  >
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>Upload Video File</span>
-                  </button>
-                </div>
-                {uploadProgressText && isUploadingMedia && (
-                  <div className="text-xs text-emerald-700 animate-pulse">
-                    {uploadProgressText}
+              {/* Media: Main Video (Optional for Image Artworks) */}
+              {projectMediaType !== 'image' && (
+                <div className="p-4 rounded-2xl bg-white border border-black/[0.08] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-creato uppercase tracking-wider font-semibold text-[#171717] flex items-center gap-1.5">
+                      <Film className="w-3.5 h-3.5" />
+                      <span>Video Media Source</span>
+                    </span>
+                    {editingProject.video && (
+                      <button
+                        type="button"
+                        onClick={() => setEditingProject({ ...editingProject, video: '' })}
+                        className="text-[11px] text-red-600 hover:underline cursor-pointer"
+                      >
+                        Remove Video
+                      </button>
+                    )}
                   </div>
-                )}
-              </div>
 
-              {/* Media: Thumbnail / Poster */}
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <input
+                      type="text"
+                      value={editingProject.video || ''}
+                      onChange={(e) => setEditingProject({ ...editingProject, video: e.target.value })}
+                      placeholder="Video URL (e.g. /projects/project-02/video.mp4 or Supabase URL)"
+                      className="flex-1 px-3.5 py-2 rounded-xl bg-[#F5F4F0] border border-black/[0.08] text-xs text-[#171717] focus:outline-none font-mono"
+                    />
+                    <input
+                      ref={videoFileInputRef}
+                      type="file"
+                      accept="video/mp4,video/webm,video/quicktime"
+                      className="hidden"
+                      onChange={(e) => handleFileUpload(e, 'video')}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => videoFileInputRef.current?.click()}
+                      disabled={isUploadingMedia}
+                      className="px-4 py-2 rounded-xl bg-[#171717] text-white hover:bg-black text-xs font-medium flex items-center justify-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-50"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Upload Video File</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Media: Main Poster / Original Artwork (TASK 2) */}
               <div className="p-4 rounded-2xl bg-white border border-black/[0.08] space-y-3">
-                <span className="text-[11px] font-creato uppercase tracking-wider font-semibold text-[#171717] block">
-                  Thumbnail / Poster Image
-                </span>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-creato uppercase tracking-wider font-semibold text-[#171717] flex items-center gap-1.5">
+                    <ImageIcon className="w-3.5 h-3.5" />
+                    <span>Main Artwork / Poster Image *</span>
+                  </span>
+                  {editingProject.imageWidth && editingProject.imageHeight && (
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-black/5 text-[#171717]">
+                      {editingProject.imageWidth} × {editingProject.imageHeight} px
+                    </span>
+                  )}
+                </div>
+
                 <div className="flex flex-col sm:flex-row gap-3">
                   <input
                     type="text"
                     value={editingProject.poster || ''}
-                    onChange={(e) => setEditingProject({ ...editingProject, poster: e.target.value, thumbnail: e.target.value })}
+                    onChange={(e) => setEditingProject({ ...editingProject, poster: e.target.value })}
                     placeholder="Poster image URL (e.g. /projects/project-01/poster.jpg)"
-                    className="flex-1 px-3.5 py-2 rounded-xl bg-[#F5F4F0] border border-black/[0.08] text-xs text-[#171717] focus:outline-none"
+                    className="flex-1 px-3.5 py-2 rounded-xl bg-[#F5F4F0] border border-black/[0.08] text-xs text-[#171717] focus:outline-none font-mono"
                   />
                   <input
                     ref={posterFileInputRef}
                     type="file"
-                    accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                    accept="image/jpeg,image/png,image/webp,image/avif"
                     className="hidden"
                     onChange={(e) => handleFileUpload(e, 'poster')}
                   />
                   <button
                     type="button"
                     onClick={() => posterFileInputRef.current?.click()}
-                    className="px-4 py-2 rounded-xl bg-[#171717] text-white hover:bg-black text-xs font-medium flex items-center justify-center gap-1.5 shrink-0"
+                    disabled={isUploadingMedia}
+                    className="px-4 py-2 rounded-xl bg-[#171717] text-white hover:bg-black text-xs font-medium flex items-center justify-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-50"
                   >
                     <Upload className="w-3.5 h-3.5" />
                     <span>Upload Image</span>
                   </button>
                 </div>
+                <div className="text-[11px] text-[#9A9185]">
+                  Supports 1 × 1 up to 4000 × 4000 px. Automatically calculates natural aspect ratio (e.g. 794/1123 portrait).
+                </div>
               </div>
+
+              {/* Media: Dedicated Grid Thumbnail (TASK 2E) */}
+              <div className="p-4 rounded-2xl bg-white border border-black/[0.08] space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[11px] font-creato uppercase tracking-wider font-semibold text-[#171717] block">
+                      Dedicated Grid Thumbnail (Optional)
+                    </span>
+                    <span className="text-[10px] text-[#9A9185]">
+                      Overrides card thumbnail in the grid without altering original poster.
+                    </span>
+                  </div>
+                  {editingProject.thumbnail && editingProject.thumbnail !== editingProject.poster && (
+                    <button
+                      type="button"
+                      onClick={() => setEditingProject({ ...editingProject, thumbnail: editingProject.poster })}
+                      className="text-[11px] text-red-600 hover:underline cursor-pointer"
+                    >
+                      Reset to Poster
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <input
+                    type="text"
+                    value={editingProject.thumbnail || ''}
+                    onChange={(e) => setEditingProject({ ...editingProject, thumbnail: e.target.value })}
+                    placeholder="Leave empty to use main poster as grid thumbnail"
+                    className="flex-1 px-3.5 py-2 rounded-xl bg-[#F5F4F0] border border-black/[0.08] text-xs text-[#171717] focus:outline-none font-mono"
+                  />
+                  <input
+                    ref={thumbnailFileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/avif"
+                    className="hidden"
+                    onChange={(e) => handleFileUpload(e, 'thumbnail')}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => thumbnailFileInputRef.current?.click()}
+                    disabled={isUploadingMedia}
+                    className="px-4 py-2 rounded-xl bg-white border border-black/[0.1] text-[#171717] hover:bg-black/5 text-xs font-medium flex items-center justify-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-50"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Upload Thumbnail</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Media: Additional Images / Stills Gallery (TASK 2F) */}
+              <div className="p-4 rounded-2xl bg-white border border-black/[0.08] space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-creato uppercase tracking-wider font-semibold text-[#171717] flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>Additional Images & Stills Gallery ({editingProject.caseStudy?.stills?.length || 0})</span>
+                  </span>
+                  <input
+                    ref={stillFileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/avif"
+                    className="hidden"
+                    onChange={(e) => handleFileUpload(e, 'still')}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => stillFileInputRef.current?.click()}
+                    disabled={isUploadingMedia}
+                    className="px-3 py-1.5 rounded-lg bg-black/5 hover:bg-black/10 text-xs font-medium text-[#171717] flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Add Gallery Image</span>
+                  </button>
+                </div>
+
+                {editingProject.caseStudy?.stills && editingProject.caseStudy.stills.length > 0 ? (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 pt-2">
+                    {editingProject.caseStudy.stills.map((stillUrl, sIdx) => (
+                      <div key={sIdx} className="relative aspect-square rounded-xl overflow-hidden bg-black/5 group border border-black/[0.06]">
+                        <img src={stillUrl} alt={`Still ${sIdx + 1}`} className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveStill(sIdx)}
+                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center text-xs opacity-90 hover:opacity-100 cursor-pointer shadow-sm"
+                          title="Remove image"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-[11px] text-[#9A9185] py-1">
+                    No additional images added yet. Click "+ Add Gallery Image" above to attach extra artwork or process stills.
+                  </div>
+                )}
+              </div>
+
+              {uploadProgressText && isUploadingMedia && (
+                <div className="text-xs text-emerald-700 animate-pulse font-medium">
+                  {uploadProgressText}
+                </div>
+              )}
 
               {/* Toggles: Featured & Published */}
               <div className="flex flex-wrap items-center gap-6 pt-2">
@@ -1123,14 +1878,14 @@ export const AdminPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-5 py-2.5 rounded-xl bg-white border border-black/[0.08] text-xs font-medium text-[#686764] hover:text-[#171717]"
+                  className="px-5 py-2.5 rounded-xl bg-white border border-black/[0.08] text-xs font-medium text-[#686764] hover:text-[#171717] cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isUploadingMedia}
-                  className="px-6 py-2.5 rounded-xl bg-[#171717] text-white hover:bg-black text-xs font-semibold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-6 py-2.5 rounded-xl bg-[#171717] text-white hover:bg-black text-xs font-semibold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
                 >
                   {isUploadingMedia ? 'Uploading Media...' : 'Save Project'}
                 </button>
@@ -1159,14 +1914,14 @@ export const AdminPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsDeletingId(null)}
-                className="px-4 py-2 rounded-xl bg-white border border-black/[0.08] text-xs text-[#686764]"
+                className="px-4 py-2 rounded-xl bg-white border border-black/[0.08] text-xs text-[#686764] cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => handleDeleteConfirm(isDeletingId)}
-                className="px-5 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 text-xs font-semibold"
+                className="px-5 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 text-xs font-semibold cursor-pointer"
               >
                 Delete Project
               </button>
@@ -1188,7 +1943,7 @@ export const AdminPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsPasswordModalOpen(false)}
-                className="w-7 h-7 rounded-full bg-white flex items-center justify-center text-xs"
+                className="w-7 h-7 rounded-full bg-white flex items-center justify-center text-xs cursor-pointer"
               >
                 ✕
               </button>
@@ -1236,13 +1991,13 @@ export const AdminPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsPasswordModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-white border border-black/[0.08] text-xs"
+                  className="px-4 py-2 rounded-xl bg-white border border-black/[0.08] text-xs cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-[#171717] text-white hover:bg-black text-xs font-semibold"
+                  className="px-5 py-2 rounded-xl bg-[#171717] text-white hover:bg-black text-xs font-semibold cursor-pointer"
                 >
                   Update Password
                 </button>

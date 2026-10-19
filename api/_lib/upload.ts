@@ -9,6 +9,7 @@ const ALLOWED_MIME_TYPES = new Set([
   'image/webp',
   'image/svg+xml',
   'image/gif',
+  'image/avif',
   'video/mp4',
   'video/webm',
   'video/quicktime'
@@ -20,6 +21,7 @@ const EXTENSION_MAP: Record<string, string> = {
   'image/webp': '.webp',
   'image/svg+xml': '.svg',
   'image/gif': '.gif',
+  'image/avif': '.avif',
   'video/mp4': '.mp4',
   'video/webm': '.webm',
   'video/quicktime': '.mov'
